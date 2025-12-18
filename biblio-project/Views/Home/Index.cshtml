@@ -1,8 +1,90 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Accueil";
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <h1 class="display-4">Bienvenue à la Bibliothèque</h1>
+    <p class="lead">Découvrez notre collection de livres et empruntez vos favoris</p>
 </div>
+
+<div class="row mt-5">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Catalogue</h5>
+                <p class="card-text">Explorez notre vaste collection de livres dans tous les genres</p>
+                <a asp-controller="Catalog" asp-action="Index" class="btn btn-primary">
+                    Parcourir le catalogue
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-search fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Recherche Avancée</h5>
+                <p class="card-text">Trouvez rapidement le livre que vous cherchez</p>
+                <a asp-controller="Catalog" asp-action="Index" class="btn btn-success">
+                    Rechercher
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-user fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Mon Espace</h5>
+                <p class="card-text">Gérez vos emprunts et réservations</p>
+                <a asp-controller="UserDashboard" asp-action="Index" class="btn btn-info">
+                    Accéder à mon espace
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">Comment ça marche ?</h2>
+    </div>
+    <div class="col-md-3 text-center mb-4">
+        <div class="step-circle mx-auto mb-3">1</div>
+        <h5>Recherchez</h5>
+        <p>Parcourez notre catalogue ou utilisez la recherche</p>
+    </div>
+    <div class="col-md-3 text-center mb-4">
+        <div class="step-circle mx-auto mb-3">2</div>
+        <h5>Sélectionnez</h5>
+        <p>Choisissez le livre qui vous intéresse</p>
+    </div>
+    <div class="col-md-3 text-center mb-4">
+        <div class="step-circle mx-auto mb-3">3</div>
+        <h5>Empruntez</h5>
+        <p>Empruntez ou réservez votre livre</p>
+    </div>
+    <div class="col-md-3 text-center mb-4">
+        <div class="step-circle mx-auto mb-3">4</div>
+        <h5>Profitez</h5>
+        <p>Lisez et retournez avant la date d'échéance</p>
+    </div>
+</div>
+
+<style>
+    .step-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #007bff;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+    }
+</style>

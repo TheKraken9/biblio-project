@@ -1,0 +1,102 @@
+@model biblio_project.Models.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Créer un compte";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-lg">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <i class="fas fa-user-plus fa-5x text-success mb-3"></i>
+                    <h2>Créer un compte</h2>
+                    <p class="text-muted">Rejoignez notre bibliothèque</p>
+                </div>
+
+                <form asp-action="Register" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="FirstName" class="form-label">
+                                <i class="fas fa-user"></i> @Html.DisplayNameFor(m => m.FirstName)
+                            </label>
+                            <input asp-for="FirstName" class="form-control" placeholder="Votre prénom" />
+                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="LastName" class="form-label">
+                                <i class="fas fa-user"></i> @Html.DisplayNameFor(m => m.LastName)
+                            </label>
+                            <input asp-for="LastName" class="form-control" placeholder="Votre nom" />
+                            <span asp-validation-for="LastName" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label">
+                            <i class="fas fa-at"></i> @Html.DisplayNameFor(m => m.Username)
+                        </label>
+                        <input asp-for="Username" class="form-control" placeholder="Choisissez un nom d'utilisateur" />
+                        <span asp-validation-for="Username" class="text-danger"></span>
+                        <small class="form-text text-muted">3 caractères minimum</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label">
+                            <i class="fas fa-envelope"></i> @Html.DisplayNameFor(m => m.Email)
+                        </label>
+                        <input asp-for="Email" class="form-control" placeholder="votre.email@exemple.com" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PhoneNumber" class="form-label">
+                            <i class="fas fa-phone"></i> @Html.DisplayNameFor(m => m.PhoneNumber)
+                        </label>
+                        <input asp-for="PhoneNumber" class="form-control" placeholder="Optionnel" />
+                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label">
+                            <i class="fas fa-lock"></i> @Html.DisplayNameFor(m => m.Password)
+                        </label>
+                        <input asp-for="Password" class="form-control" placeholder="Choisissez un mot de passe" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                        <small class="form-text text-muted">6 caractères minimum</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ConfirmPassword" class="form-label">
+                            <i class="fas fa-lock"></i> @Html.DisplayNameFor(m => m.ConfirmPassword)
+                        </label>
+                        <input asp-for="ConfirmPassword" class="form-control" placeholder="Confirmez votre mot de passe" />
+                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid gap-2 mb-3">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-user-plus"></i> Créer mon compte
+                        </button>
+                    </div>
+
+                    <div class="text-center">
+                        <p class="mb-0">
+                            Vous avez déjà un compte ? 
+                            <a asp-action="Login" class="text-decoration-none">
+                                <strong>Se connecter</strong>
+                            </a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
