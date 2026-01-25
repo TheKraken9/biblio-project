@@ -4,7 +4,7 @@ public class Reservation
 {
     public int Id { get; set; }
     public int BookId { get; set; }
-    public Guid RequesterId { get; set; }
+    public int RequesterId { get; set; }
     public int? AssignedCopyId { get; set; }
     public string Status { get; set; } = "PENDING";
     public int PositionInQueue { get; set; }

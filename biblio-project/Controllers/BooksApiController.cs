@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using biblio_project.Models;
-using System.Data.SqlClient;
 using Microsoft.Data.SqlClient;
 
 namespace biblio_project.Controllers;
@@ -13,7 +12,7 @@ public class BooksApiController : ControllerBase
 
     public BooksApiController(IConfiguration configuration)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection") 
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string not found");
     }
 
@@ -35,13 +34,13 @@ public class BooksApiController : ControllerBase
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                whereClause.Add("(b.Title LIKE @Search OR b.AuthorNamesText LIKE @Search)");
+                whereClause.Add("(b.Title LIKE @Search OR b.AuthorNamesText LIKE @Search OR b.Keyword LIKE @Search)");
                 parameters.Add(new SqlParameter("@Search", $"%{search}%"));
             }
 
             if (categoryId.HasValue)
             {
-                whereClause.Add("EXISTS (SELECT 1 FROM BookCategory bc WHERE bc.BookId = b.Id AND bc.CategoryId = @CategoryId)");
+                whereClause.Add("EXISTS (SELECT 1 FROM BookCategories bc WHERE bc.BookId = b.Id AND bc.CategoryId = @CategoryId)");
                 parameters.Add(new SqlParameter("@CategoryId", categoryId.Value));
             }
 
@@ -54,10 +53,10 @@ public class BooksApiController : ControllerBase
             var offset = (page - 1) * pageSize;
 
             var query = $@"
-                SELECT b.Id, b.Title, b.Subtitle, b.PublicationYear, 
+                SELECT b.Id, b.Title, b.Subtitle, b.PublicationYear,
                        b.CoverImageUrl, b.AuthorNamesText, b.CategoryNamesText,
                        b.AvailableCopiesCount, b.TotalCopiesCount
-                FROM Book b
+                FROM Books b
                 {whereCondition}
                 ORDER BY b.Title
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
@@ -144,12 +143,12 @@ public class BooksApiController : ControllerBase
         BookDetail? book = null;
 
         var query = @"
-            SELECT b.Id, b.Title, b.Subtitle, b.Summary, b.PublicationYear,
+            SELECT b.Id, b.Title, b.Subtitle, b.Keyword, b.PublicationYear,
                    b.CoverImageUrl, b.AuthorNamesText, b.CategoryNamesText,
                    b.AvailableCopiesCount, b.TotalCopiesCount,
                    p.Name as PublisherName
-            FROM Book b
-            LEFT JOIN Publisher p ON b.PublisherId = p.Id
+            FROM Books b
+            LEFT JOIN publisher p ON b.PublisherId = p.Id
             WHERE b.Id = @BookId";
 
         using (var command = new SqlCommand(query, connection))
@@ -164,7 +163,7 @@ public class BooksApiController : ControllerBase
                     Id = reader.GetInt32(0),
                     Title = reader.GetString(1),
                     Subtitle = reader.IsDBNull(2) ? null : reader.GetString(2),
-                    Summary = reader.IsDBNull(3) ? null : reader.GetString(3),
+                    Summary = reader.IsDBNull(3) ? null : reader.GetString(3), // Keyword comme résumé
                     PublicationYear = reader.IsDBNull(4) ? null : reader.GetInt32(4),
                     CoverImageUrl = reader.IsDBNull(5) ? null : reader.GetString(5),
                     AuthorNamesText = reader.IsDBNull(6) ? null : reader.GetString(6),
@@ -190,8 +189,8 @@ public class BooksApiController : ControllerBase
         var authors = new List<Author>();
         var query = @"
             SELECT a.Id, a.FirstName, a.LastName, a.BirthYear, a.DeathYear
-            FROM Author a
-            INNER JOIN BookAuthor ba ON a.Id = ba.AuthorId
+            FROM author a
+            INNER JOIN BookAuthors ba ON a.Id = ba.AuthorId
             WHERE ba.BookId = @BookId";
 
         using var command = new SqlCommand(query, connection);
@@ -217,9 +216,9 @@ public class BooksApiController : ControllerBase
     {
         var categories = new List<Category>();
         var query = @"
-            SELECT c.Id, c.Name, c.Slug, c.Description
-            FROM Category c
-            INNER JOIN BookCategory bc ON c.Id = bc.CategoryId
+            SELECT c.Id, c.Name, c.Description
+            FROM category c
+            INNER JOIN BookCategories bc ON c.Id = bc.CategoryId
             WHERE bc.BookId = @BookId";
 
         using var command = new SqlCommand(query, connection);
@@ -232,8 +231,8 @@ public class BooksApiController : ControllerBase
             {
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
-                Slug = reader.GetString(2),
-                Description = reader.IsDBNull(3) ? null : reader.GetString(3)
+                Slug = reader.GetString(1).ToLower().Replace(" ", "-"), // Générer slug à partir du nom
+                Description = reader.IsDBNull(2) ? null : reader.GetString(2)
             });
         }
 

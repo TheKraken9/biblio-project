@@ -6,23 +6,26 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 //
-// 🔹 SERVICES (AVANT Build)
+// SERVICES (AVANT Build)
 //
 
 // MVC
 builder.Services.AddControllersWithViews();
 
-// 🔹 SQL Server (Entity Framework Core)
+// SQL Server (Entity Framework Core)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
 );
 
-// 🔹 Service de hashage de mot de passe
+// Service de hashage de mot de passe
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
-// 🔹 Authentification par cookie
+// Service de seeding des données
+builder.Services.AddScoped<IDataSeeder, DataSeeder>();
+
+// Authentification par cookie
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -33,18 +36,36 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
     });
 
-// 🔹 Autorisation
+// Autorisation
 builder.Services.AddAuthorization();
 
 
 //
-// 🔹 BUILD
+// BUILD
 //
 var app = builder.Build();
 
 
 //
-// 🔹 PIPELINE HTTP
+// SEEDING DES DONNÉES INITIALES
+//
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<IDataSeeder>();
+    try
+    {
+        await seeder.SeedAsync();
+        Console.WriteLine("Seeding des données terminé avec succès.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Erreur lors du seeding des données: {ex.Message}");
+    }
+}
+
+
+//
+// PIPELINE HTTP
 //
 
 if (!app.Environment.IsDevelopment())
@@ -53,12 +74,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-// 🔹 Endpoint test DB (temporaire)
+// Endpoint test DB (temporaire)
 app.MapGet("/db-test", async (AppDbContext db) =>
 {
     return await db.Database.CanConnectAsync()
-        ? Results.Ok("✅ Connexion SQL Server OK")
-        : Results.Problem("❌ Connexion SQL Server échouée");
+        ? Results.Ok("Connexion SQL Server OK")
+        : Results.Problem("Connexion SQL Server échouée");
 });
 
 app.UseHttpsRedirection();
@@ -69,13 +90,13 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 🔹 Routing MVC
+// Routing MVC
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 
 //
-// 🔹 RUN
+// RUN
 //
 app.Run();

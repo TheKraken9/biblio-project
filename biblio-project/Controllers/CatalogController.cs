@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using biblio_project.Models;
-using System.Data.SqlClient;
-using System.Data;
 using Microsoft.Data.SqlClient;
 
 namespace biblio_project.Controllers;
@@ -12,11 +10,11 @@ public class CatalogController : Controller
 
     public CatalogController(IConfiguration configuration)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection") 
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string not found");
     }
 
-    public async Task<IActionResult> Index(string? search, int? categoryId, int? authorId, 
+    public async Task<IActionResult> Index(string? search, int? categoryId, int? authorId,
         bool? availableOnly, int? year, int page = 1)
     {
         var viewModel = new CatalogViewModel
@@ -34,7 +32,7 @@ public class CatalogController : Controller
 
         // Récupérer les catégories pour les filtres
         viewModel.Categories = await GetCategoriesAsync(connection);
-        
+
         // Récupérer les auteurs pour les filtres
         viewModel.Authors = await GetAuthorsAsync(connection);
 
@@ -49,7 +47,7 @@ public class CatalogController : Controller
     private async Task<List<Category>> GetCategoriesAsync(SqlConnection connection)
     {
         var categories = new List<Category>();
-        var query = "SELECT Id, Name, Slug, Description FROM Category ORDER BY Name";
+        var query = "SELECT Id, Name, Description FROM category ORDER BY Name";
 
         using var command = new SqlCommand(query, connection);
         using var reader = await command.ExecuteReaderAsync();
@@ -60,8 +58,8 @@ public class CatalogController : Controller
             {
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
-                Slug = reader.GetString(2),
-                Description = reader.IsDBNull(3) ? null : reader.GetString(3)
+                Slug = reader.GetString(1).ToLower().Replace(" ", "-"), // Générer slug à partir du nom
+                Description = reader.IsDBNull(2) ? null : reader.GetString(2)
             });
         }
 
@@ -73,8 +71,8 @@ public class CatalogController : Controller
         var authors = new List<Author>();
         var query = @"
             SELECT DISTINCT a.Id, a.FirstName, a.LastName, a.BirthYear, a.DeathYear
-            FROM Author a
-            INNER JOIN BookAuthor ba ON a.Id = ba.AuthorId
+            FROM author a
+            INNER JOIN BookAuthors ba ON a.Id = ba.AuthorId
             ORDER BY a.LastName, a.FirstName";
 
         using var command = new SqlCommand(query, connection);
@@ -98,26 +96,26 @@ public class CatalogController : Controller
     private async Task<(List<Book>, int)> GetBooksAsync(SqlConnection connection, CatalogViewModel model)
     {
         var books = new List<Book>();
-        
+
         // Construction de la requête avec filtres
         var whereClause = new List<string>();
         var parameters = new List<SqlParameter>();
 
         if (!string.IsNullOrWhiteSpace(model.SearchQuery))
         {
-            whereClause.Add("(b.Title LIKE @Search OR b.AuthorNamesText LIKE @Search OR b.Summary LIKE @Search)");
+            whereClause.Add("(b.Title LIKE @Search OR b.AuthorNamesText LIKE @Search OR b.Keyword LIKE @Search OR b.NormalizedTitle LIKE @Search)");
             parameters.Add(new SqlParameter("@Search", $"%{model.SearchQuery}%"));
         }
 
         if (model.CategoryId.HasValue)
         {
-            whereClause.Add("EXISTS (SELECT 1 FROM BookCategory bc WHERE bc.BookId = b.Id AND bc.CategoryId = @CategoryId)");
+            whereClause.Add("EXISTS (SELECT 1 FROM BookCategories bc WHERE bc.BookId = b.Id AND bc.CategoryId = @CategoryId)");
             parameters.Add(new SqlParameter("@CategoryId", model.CategoryId.Value));
         }
 
         if (model.AuthorId.HasValue)
         {
-            whereClause.Add("EXISTS (SELECT 1 FROM BookAuthor ba WHERE ba.BookId = b.Id AND ba.AuthorId = @AuthorId)");
+            whereClause.Add("EXISTS (SELECT 1 FROM BookAuthors ba WHERE ba.BookId = b.Id AND ba.AuthorId = @AuthorId)");
             parameters.Add(new SqlParameter("@AuthorId", model.AuthorId.Value));
         }
 
@@ -134,13 +132,19 @@ public class CatalogController : Controller
 
         var whereCondition = whereClause.Count > 0 ? "WHERE " + string.Join(" AND ", whereClause) : "";
 
-        // Compter le total
-        var countQuery = $"SELECT COUNT(*) FROM Book b {whereCondition}";
+        // Compter le total d'abord
+        var countQuery = $"SELECT COUNT(*) FROM Books b {whereCondition}";
+        int totalCount;
+
         using (var countCommand = new SqlCommand(countQuery, connection))
         {
-            countCommand.Parameters.AddRange(parameters.ToArray());
-            var totalCount = (int)await countCommand.ExecuteScalarAsync();
-            
+            // Recréer les paramètres pour cette commande
+            foreach (var param in parameters)
+            {
+                countCommand.Parameters.AddWithValue(param.ParameterName, param.Value);
+            }
+            totalCount = (int)await countCommand.ExecuteScalarAsync();
+
             if (totalCount == 0)
                 return (books, 0);
         }
@@ -148,22 +152,27 @@ public class CatalogController : Controller
         // Récupérer les livres paginés
         var offset = (model.CurrentPage - 1) * model.PageSize;
         var query = $@"
-            SELECT b.Id, b.Title, b.Subtitle, b.Summary, b.PublicationYear, 
+            SELECT b.Id, b.Title, b.Subtitle, b.Keyword, b.PublicationYear,
                    b.CoverImageUrl, b.AuthorNamesText, b.CategoryNamesText,
                    b.AvailableCopiesCount, b.TotalCopiesCount,
-                   c.Name as MainCategoryName, p.Name as PublisherName
-            FROM Book b
-            LEFT JOIN Category c ON b.MainCategoryId = c.Id
-            LEFT JOIN Publisher p ON b.PublisherId = p.Id
+                   (SELECT TOP 1 c.Name FROM category c
+                    INNER JOIN BookCategories bc ON c.Id = bc.CategoryId
+                    WHERE bc.BookId = b.Id) as MainCategoryName,
+                   p.Name as PublisherName
+            FROM Books b
+            LEFT JOIN publisher p ON b.PublisherId = p.Id
             {whereCondition}
             ORDER BY b.Title
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
         using (var command = new SqlCommand(query, connection))
         {
-            command.Parameters.AddRange(parameters.ToArray());
-            command.Parameters.Add(new SqlParameter("@Offset", offset));
-            command.Parameters.Add(new SqlParameter("@PageSize", model.PageSize));
+            foreach (var param in parameters)
+            {
+                command.Parameters.AddWithValue(param.ParameterName, param.Value);
+            }
+            command.Parameters.AddWithValue("@Offset", offset);
+            command.Parameters.AddWithValue("@PageSize", model.PageSize);
 
             using (var reader = await command.ExecuteReaderAsync())
             {
@@ -174,7 +183,7 @@ public class CatalogController : Controller
                         Id = reader.GetInt32(0),
                         Title = reader.GetString(1),
                         Subtitle = reader.IsDBNull(2) ? null : reader.GetString(2),
-                        Summary = reader.IsDBNull(3) ? null : reader.GetString(3),
+                        Summary = reader.IsDBNull(3) ? null : reader.GetString(3), // Keyword comme résumé
                         PublicationYear = reader.IsDBNull(4) ? null : reader.GetInt32(4),
                         CoverImageUrl = reader.IsDBNull(5) ? null : reader.GetString(5),
                         AuthorNamesText = reader.IsDBNull(6) ? null : reader.GetString(6),
@@ -185,16 +194,10 @@ public class CatalogController : Controller
                         PublisherName = reader.IsDBNull(11) ? null : reader.GetString(11)
                     });
                 }
-            } // 👈 reader fermé ICI
+            }
         }
 
-// MAINTENANT seulement
-        var finalCountQuery = $"SELECT COUNT(*) FROM Book b {whereCondition}";
-        using var finalCountCommand = new SqlCommand(finalCountQuery, connection);
-        finalCountCommand.Parameters.AddRange(parameters.ToArray());
-        var totalCountFinal = (int)await finalCountCommand.ExecuteScalarAsync();
-
-        return (books, totalCountFinal);
+        return (books, totalCount);
     }
 
     public async Task<IActionResult> Details(int id)
@@ -203,7 +206,7 @@ public class CatalogController : Controller
         await connection.OpenAsync();
 
         var book = await GetBookDetailAsync(connection, id);
-        
+
         if (book == null)
             return NotFound();
 
@@ -215,12 +218,12 @@ public class CatalogController : Controller
         BookDetail? book = null;
 
         var query = @"
-            SELECT b.Id, b.Title, b.Subtitle, b.Summary, b.PublicationYear,
+            SELECT b.Id, b.Title, b.Subtitle, b.Keyword, b.PublicationYear,
                    b.CoverImageUrl, b.AuthorNamesText, b.CategoryNamesText,
                    b.AvailableCopiesCount, b.TotalCopiesCount,
                    p.Name as PublisherName
-            FROM Book b
-            LEFT JOIN Publisher p ON b.PublisherId = p.Id
+            FROM Books b
+            LEFT JOIN publisher p ON b.PublisherId = p.Id
             WHERE b.Id = @BookId";
 
         using (var command = new SqlCommand(query, connection))
@@ -235,7 +238,7 @@ public class CatalogController : Controller
                     Id = reader.GetInt32(0),
                     Title = reader.GetString(1),
                     Subtitle = reader.IsDBNull(2) ? null : reader.GetString(2),
-                    Summary = reader.IsDBNull(3) ? null : reader.GetString(3),
+                    Summary = reader.IsDBNull(3) ? null : reader.GetString(3), // Keyword comme résumé
                     PublicationYear = reader.IsDBNull(4) ? null : reader.GetInt32(4),
                     CoverImageUrl = reader.IsDBNull(5) ? null : reader.GetString(5),
                     AuthorNamesText = reader.IsDBNull(6) ? null : reader.GetString(6),
@@ -264,8 +267,8 @@ public class CatalogController : Controller
         var authors = new List<Author>();
         var query = @"
             SELECT a.Id, a.FirstName, a.LastName, a.BirthYear, a.DeathYear, a.Bio
-            FROM Author a
-            INNER JOIN BookAuthor ba ON a.Id = ba.AuthorId
+            FROM author a
+            INNER JOIN BookAuthors ba ON a.Id = ba.AuthorId
             WHERE ba.BookId = @BookId
             ORDER BY a.LastName, a.FirstName";
 
@@ -293,9 +296,9 @@ public class CatalogController : Controller
     {
         var categories = new List<Category>();
         var query = @"
-            SELECT c.Id, c.Name, c.Slug, c.Description
-            FROM Category c
-            INNER JOIN BookCategory bc ON c.Id = bc.CategoryId
+            SELECT c.Id, c.Name, c.Description
+            FROM category c
+            INNER JOIN BookCategories bc ON c.Id = bc.CategoryId
             WHERE bc.BookId = @BookId
             ORDER BY c.Name";
 
@@ -309,8 +312,8 @@ public class CatalogController : Controller
             {
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
-                Slug = reader.GetString(2),
-                Description = reader.IsDBNull(3) ? null : reader.GetString(3)
+                Slug = reader.GetString(1).ToLower().Replace(" ", "-"),
+                Description = reader.IsDBNull(2) ? null : reader.GetString(2)
             });
         }
 

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using biblio_project.Models;
-using System.Data.SqlClient;
 using Microsoft.Data.SqlClient;
 
 namespace biblio_project.Controllers;
@@ -14,7 +13,7 @@ public class ReservationsApiController : ControllerBase
 
     public ReservationsApiController(IConfiguration configuration)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection") 
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string not found");
         _maxReservations = 3;
     }
@@ -87,11 +86,11 @@ public class ReservationsApiController : ControllerBase
             try
             {
                 var insertQuery = @"
-                    INSERT INTO Reservation (BookId, RequesterId, Status, PositionInQueue, RequestedAt,
-                                           BookTitleSnapshot, RequesterNameSnapshot)
+                    INSERT INTO Reservations (BookId, RequesterId, Status, PositionInQueue, RequestedAt,
+                                             BookTitleSnapshot, RequesterNameSnapshot, CreatedAt, UpdatedAt)
                     OUTPUT INSERTED.Id
-                    VALUES (@BookId, @RequesterId, 'PENDING', @Position, GETDATE(),
-                            @BookTitle, @RequesterName)";
+                    VALUES (@BookId, @RequesterId, 'Pending', @Position, GETDATE(),
+                            @BookTitle, @RequesterName, GETDATE(), GETDATE())";
 
                 int reservationId;
                 using (var command = new SqlCommand(insertQuery, connection, transaction))
@@ -105,9 +104,6 @@ public class ReservationsApiController : ControllerBase
                     reservationId = (int)await command.ExecuteScalarAsync();
                 }
 
-                // Mettre à jour les statistiques
-                await UpdateBookStatisticsAsync(connection, transaction, request.BookId);
-
                 transaction.Commit();
 
                 var reservation = new Reservation
@@ -115,7 +111,7 @@ public class ReservationsApiController : ControllerBase
                     Id = reservationId,
                     BookId = request.BookId,
                     RequesterId = request.UserId,
-                    Status = "PENDING",
+                    Status = "Pending",
                     PositionInQueue = position,
                     RequestedAt = DateTime.Now,
                     BookTitleSnapshot = bookInfo.Title,
@@ -147,18 +143,18 @@ public class ReservationsApiController : ControllerBase
     }
 
     [HttpGet("user/{userId}")]
-    public async Task<ActionResult<ApiResponse<List<Reservation>>>> GetUserReservations(Guid userId, [FromQuery] bool activeOnly = true)
+    public async Task<ActionResult<ApiResponse<List<Reservation>>>> GetUserReservations(int userId, [FromQuery] bool activeOnly = true)
     {
         try
         {
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var statusFilter = activeOnly ? "AND Status IN ('PENDING', 'READY_FOR_PICKUP')" : "";
+            var statusFilter = activeOnly ? "AND Status IN ('Pending', 'ReadyForPickup')" : "";
             var query = $@"
-                SELECT Id, BookId, RequesterId, AssignedCopyId, Status, PositionInQueue,
-                       RequestedAt, ExpiresAt, BookTitleSnapshot
-                FROM Reservation
+                SELECT Id, BookId, RequesterId, Status, PositionInQueue,
+                       RequestedAt, ExpireAt, BookTitleSnapshot
+                FROM Reservations
                 WHERE RequesterId = @UserId
                 {statusFilter}
                 ORDER BY RequestedAt DESC";
@@ -174,13 +170,12 @@ public class ReservationsApiController : ControllerBase
                 {
                     Id = reader.GetInt32(0),
                     BookId = reader.GetInt32(1),
-                    RequesterId = reader.GetGuid(2),
-                    AssignedCopyId = reader.IsDBNull(3) ? null : reader.GetInt32(3),
-                    Status = reader.GetString(4),
-                    PositionInQueue = reader.GetInt32(5),
-                    RequestedAt = reader.GetDateTime(6),
-                    ExpiresAt = reader.IsDBNull(7) ? null : reader.GetDateTime(7),
-                    BookTitleSnapshot = reader.IsDBNull(8) ? null : reader.GetString(8)
+                    RequesterId = reader.GetInt32(2),
+                    Status = reader.GetString(3),
+                    PositionInQueue = reader.GetInt32(4),
+                    RequestedAt = reader.GetDateTime(5),
+                    ExpiresAt = reader.IsDBNull(6) ? null : reader.GetDateTime(6),
+                    BookTitleSnapshot = reader.IsDBNull(7) ? null : reader.GetString(7)
                 });
             }
 
@@ -203,7 +198,7 @@ public class ReservationsApiController : ControllerBase
     }
 
     [HttpDelete("{reservationId}")]
-    public async Task<ActionResult<ApiResponse<bool>>> CancelReservation(int reservationId, [FromQuery] Guid userId)
+    public async Task<ActionResult<ApiResponse<bool>>> CancelReservation(int reservationId, [FromQuery] int userId)
     {
         try
         {
@@ -212,8 +207,8 @@ public class ReservationsApiController : ControllerBase
 
             // Vérifier que la réservation appartient à l'utilisateur
             var checkQuery = @"
-                SELECT BookId, Status 
-                FROM Reservation 
+                SELECT BookId, Status
+                FROM Reservations
                 WHERE Id = @ReservationId AND RequesterId = @UserId";
 
             int bookId;
@@ -237,7 +232,7 @@ public class ReservationsApiController : ControllerBase
                 status = reader.GetString(1);
             }
 
-            if (status == "FULFILLED" || status == "CANCELLED")
+            if (status == "Fulfilled" || status == "Cancelled")
             {
                 return BadRequest(new ApiResponse<bool>
                 {
@@ -251,8 +246,8 @@ public class ReservationsApiController : ControllerBase
             {
                 // Annuler la réservation
                 var updateQuery = @"
-                    UPDATE Reservation 
-                    SET Status = 'CANCELLED', UpdatedAt = GETDATE()
+                    UPDATE Reservations
+                    SET Status = 'Cancelled', UpdatedAt = GETDATE()
                     WHERE Id = @ReservationId";
 
                 using (var command = new SqlCommand(updateQuery, connection, transaction))
@@ -263,9 +258,6 @@ public class ReservationsApiController : ControllerBase
 
                 // Réorganiser la file d'attente
                 await ReorganizeQueueAsync(connection, transaction, bookId);
-
-                // Mettre à jour les statistiques
-                await UpdateBookStatisticsAsync(connection, transaction, bookId);
 
                 transaction.Commit();
 
@@ -294,31 +286,31 @@ public class ReservationsApiController : ControllerBase
     }
 
     // Méthodes privées
-    private async Task<bool> UserExistsAsync(SqlConnection connection, Guid userId)
+    private async Task<bool> UserExistsAsync(SqlConnection connection, int userId)
     {
-        var query = "SELECT COUNT(*) FROM LibraryUser WHERE Id = @UserId AND IsActive = 1";
+        var query = "SELECT COUNT(*) FROM library_user WHERE Id = @UserId AND IsActive = 1";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
         var count = (int)await command.ExecuteScalarAsync();
         return count > 0;
     }
 
-    private async Task<int> GetUserActiveReservationsCountAsync(SqlConnection connection, Guid userId)
+    private async Task<int> GetUserActiveReservationsCountAsync(SqlConnection connection, int userId)
     {
-        var query = "SELECT COUNT(*) FROM Reservation WHERE RequesterId = @UserId AND Status IN ('PENDING', 'READY_FOR_PICKUP')";
+        var query = "SELECT COUNT(*) FROM Reservations WHERE RequesterId = @UserId AND Status IN ('Pending', 'ReadyForPickup')";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
         return (int)await command.ExecuteScalarAsync();
     }
 
-    private async Task<bool> HasActiveReservationForBookAsync(SqlConnection connection, Guid userId, int bookId)
+    private async Task<bool> HasActiveReservationForBookAsync(SqlConnection connection, int userId, int bookId)
     {
         var query = @"
-            SELECT COUNT(*) 
-            FROM Reservation 
-            WHERE RequesterId = @UserId 
-            AND BookId = @BookId 
-            AND Status IN ('PENDING', 'READY_FOR_PICKUP')";
+            SELECT COUNT(*)
+            FROM Reservations
+            WHERE RequesterId = @UserId
+            AND BookId = @BookId
+            AND Status IN ('Pending', 'ReadyForPickup')";
 
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
@@ -329,7 +321,7 @@ public class ReservationsApiController : ControllerBase
 
     private async Task<Book?> GetBookInfoAsync(SqlConnection connection, int bookId)
     {
-        var query = "SELECT Id, Title FROM Book WHERE Id = @BookId";
+        var query = "SELECT Id, Title FROM Books WHERE Id = @BookId";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@BookId", bookId);
         using var reader = await command.ExecuteReaderAsync();
@@ -346,9 +338,9 @@ public class ReservationsApiController : ControllerBase
         return null;
     }
 
-    private async Task<LibraryUser?> GetUserInfoAsync(SqlConnection connection, Guid userId)
+    private async Task<LibraryUser?> GetUserInfoAsync(SqlConnection connection, int userId)
     {
-        var query = "SELECT Id, FirstName, LastName, Email FROM LibraryUser WHERE Id = @UserId";
+        var query = "SELECT Id, FirstName, LastName, Email FROM library_user WHERE Id = @UserId";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
         using var reader = await command.ExecuteReaderAsync();
@@ -357,7 +349,7 @@ public class ReservationsApiController : ControllerBase
         {
             return new LibraryUser
             {
-                Id = reader.GetGuid(0),
+                Id = reader.GetInt32(0),
                 FirstName = reader.GetString(1),
                 LastName = reader.GetString(2),
                 Email = reader.GetString(3)
@@ -371,8 +363,8 @@ public class ReservationsApiController : ControllerBase
     {
         var query = @"
             SELECT ISNULL(MAX(PositionInQueue), 0) + 1
-            FROM Reservation
-            WHERE BookId = @BookId AND Status = 'PENDING'";
+            FROM Reservations
+            WHERE BookId = @BookId AND Status = 'Pending'";
 
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@BookId", bookId);
@@ -384,37 +376,13 @@ public class ReservationsApiController : ControllerBase
         var query = @"
             WITH OrderedReservations AS (
                 SELECT Id, ROW_NUMBER() OVER (ORDER BY RequestedAt) as NewPosition
-                FROM Reservation
-                WHERE BookId = @BookId AND Status = 'PENDING'
+                FROM Reservations
+                WHERE BookId = @BookId AND Status = 'Pending'
             )
             UPDATE r
             SET r.PositionInQueue = o.NewPosition
-            FROM Reservation r
+            FROM Reservations r
             INNER JOIN OrderedReservations o ON r.Id = o.Id";
-
-        using var command = new SqlCommand(query, connection, transaction);
-        command.Parameters.AddWithValue("@BookId", bookId);
-        await command.ExecuteNonQueryAsync();
-    }
-
-    private async Task UpdateBookStatisticsAsync(SqlConnection connection, SqlTransaction transaction, int bookId)
-    {
-        var query = @"
-            IF EXISTS (SELECT 1 FROM BookStatistics WHERE BookId = @BookId)
-            BEGIN
-                UPDATE BookStatistics
-                SET CurrentActiveReservationsCount = (SELECT COUNT(*) FROM Reservation WHERE BookId = @BookId AND Status IN ('PENDING', 'READY_FOR_PICKUP')),
-                    UpdatedAt = GETDATE()
-                WHERE BookId = @BookId
-            END
-            ELSE
-            BEGIN
-                INSERT INTO BookStatistics (BookId, CurrentActiveReservationsCount, TotalReservationsCount, LastReservationDate)
-                VALUES (@BookId, 
-                       (SELECT COUNT(*) FROM Reservation WHERE BookId = @BookId AND Status IN ('PENDING', 'READY_FOR_PICKUP')),
-                       1,
-                       GETDATE())
-            END";
 
         using var command = new SqlCommand(query, connection, transaction);
         command.Parameters.AddWithValue("@BookId", bookId);
@@ -425,5 +393,5 @@ public class ReservationsApiController : ControllerBase
 public class ReserveBookRequest
 {
     public int BookId { get; set; }
-    public Guid UserId { get; set; }
+    public int UserId { get; set; }
 }
