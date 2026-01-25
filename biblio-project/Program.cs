@@ -1,15 +1,28 @@
 using biblio_project.Services;
+using BiblioProject.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+//
+// 🔹 SERVICES (AVANT Build)
+//
+
+// MVC
 builder.Services.AddControllersWithViews();
 
-// Enregistrer le service de hashage de mot de passe
+// 🔹 SQL Server (Entity Framework Core)
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    )
+);
+
+// 🔹 Service de hashage de mot de passe
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
-// Configuration de l'authentification
+// 🔹 Authentification par cookie
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -20,17 +33,33 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
     });
 
-// Configuration de l'autorisation
+// 🔹 Autorisation
 builder.Services.AddAuthorization();
 
+
+//
+// 🔹 BUILD
+//
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+
+//
+// 🔹 PIPELINE HTTP
+//
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+
+// 🔹 Endpoint test DB (temporaire)
+app.MapGet("/db-test", async (AppDbContext db) =>
+{
+    return await db.Database.CanConnectAsync()
+        ? Results.Ok("✅ Connexion SQL Server OK")
+        : Results.Problem("❌ Connexion SQL Server échouée");
+});
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -40,8 +69,13 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// 🔹 Routing MVC
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+
+//
+// 🔹 RUN
+//
 app.Run();
