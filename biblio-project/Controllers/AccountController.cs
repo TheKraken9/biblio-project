@@ -156,7 +156,7 @@ public class AccountController : Controller
         {
             checkCommand.Parameters.AddWithValue("@Username", model.Username);
             checkCommand.Parameters.AddWithValue("@Email", model.Email);
-            var count = (int)await checkCommand.ExecuteScalarAsync();
+            var count = (int)(await checkCommand.ExecuteScalarAsync() ?? throw new InvalidOperationException());
 
             if (count > 0)
             {
@@ -187,7 +187,7 @@ public class AccountController : Controller
                 command.Parameters.AddWithValue("@LastName", model.LastName);
                 command.Parameters.AddWithValue("@PhoneNumber", (object?)model.PhoneNumber ?? DBNull.Value);
 
-                userId = (int)await command.ExecuteScalarAsync();
+                userId = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
             }
 
             // Attribuer le rôle MEMBER par défaut
@@ -264,7 +264,7 @@ public class AccountController : Controller
         }
 
         // Vérifier le mot de passe actuel
-        if (!_passwordHasher.VerifyPassword(model.CurrentPassword, currentPasswordHash))
+        if (currentPasswordHash != null && !_passwordHasher.VerifyPassword(model.CurrentPassword, currentPasswordHash))
         {
             ModelState.AddModelError(nameof(model.CurrentPassword), "Le mot de passe actuel est incorrect");
             return View(model);

@@ -143,7 +143,7 @@ public class CatalogController : Controller
             {
                 countCommand.Parameters.AddWithValue(param.ParameterName, param.Value);
             }
-            totalCount = (int)await countCommand.ExecuteScalarAsync();
+            totalCount = (int)(await countCommand.ExecuteScalarAsync() ?? throw new InvalidOperationException());
 
             if (totalCount == 0)
                 return (books, 0);

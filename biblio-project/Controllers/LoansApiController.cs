@@ -111,7 +111,7 @@ public class LoansApiController : ControllerBase
                     command.Parameters.AddWithValue("@BorrowerName", userInfo.FullName);
                     command.Parameters.AddWithValue("@BorrowerEmail", userInfo.Email);
 
-                    loanId = (int)await command.ExecuteScalarAsync();
+                    loanId = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
                 }
 
                 // Mettre à jour le statut de l'exemplaire
@@ -235,7 +235,7 @@ public class LoansApiController : ControllerBase
         var query = "SELECT COUNT(*) FROM library_user WHERE Id = @UserId AND IsActive = 1";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
-        var count = (int)await command.ExecuteScalarAsync();
+        var count = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
         return count > 0;
     }
 
@@ -244,7 +244,7 @@ public class LoansApiController : ControllerBase
         var query = "SELECT COUNT(*) FROM Loans WHERE BorrowerId = @UserId AND Status = 'OnLoan'";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
-        return (int)await command.ExecuteScalarAsync();
+        return (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
     }
 
     private async Task<BookCopy?> GetAvailableBookCopyAsync(SqlConnection connection, int bookId)
@@ -286,7 +286,7 @@ public class LoansApiController : ControllerBase
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
         command.Parameters.AddWithValue("@BookId", bookId);
-        var count = (int)await command.ExecuteScalarAsync();
+        var count = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
         return count > 0;
     }
 

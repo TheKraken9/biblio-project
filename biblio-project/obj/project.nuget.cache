@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "CDZsXomYL9Q=",
+  "dgSpecHash": "qkWXe5lBofU=",
   "success": true,
   "projectFilePath": "/home/thekraken9/RiderProjects/biblio-project/biblio-project/biblio-project.csproj",
   "expectedPackageFiles": [
@@ -25,7 +25,16 @@
     "/home/thekraken9/.nuget/packages/microsoft.entityframeworkcore.relational/10.0.2/microsoft.entityframeworkcore.relational.10.0.2.nupkg.sha512",
     "/home/thekraken9/.nuget/packages/microsoft.entityframeworkcore.sqlserver/10.0.2/microsoft.entityframeworkcore.sqlserver.10.0.2.nupkg.sha512",
     "/home/thekraken9/.nuget/packages/microsoft.entityframeworkcore.tools/10.0.2/microsoft.entityframeworkcore.tools.10.0.2.nupkg.sha512",
+    "/home/thekraken9/.nuget/packages/microsoft.extensions.caching.abstractions/10.0.2/microsoft.extensions.caching.abstractions.10.0.2.nupkg.sha512",
+    "/home/thekraken9/.nuget/packages/microsoft.extensions.caching.memory/10.0.2/microsoft.extensions.caching.memory.10.0.2.nupkg.sha512",
+    "/home/thekraken9/.nuget/packages/microsoft.extensions.configuration.abstractions/10.0.2/microsoft.extensions.configuration.abstractions.10.0.2.nupkg.sha512",
+    "/home/thekraken9/.nuget/packages/microsoft.extensions.dependencyinjection/10.0.2/microsoft.extensions.dependencyinjection.10.0.2.nupkg.sha512",
+    "/home/thekraken9/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/10.0.2/microsoft.extensions.dependencyinjection.abstractions.10.0.2.nupkg.sha512",
     "/home/thekraken9/.nuget/packages/microsoft.extensions.dependencymodel/10.0.2/microsoft.extensions.dependencymodel.10.0.2.nupkg.sha512",
+    "/home/thekraken9/.nuget/packages/microsoft.extensions.logging/10.0.2/microsoft.extensions.logging.10.0.2.nupkg.sha512",
+    "/home/thekraken9/.nuget/packages/microsoft.extensions.logging.abstractions/10.0.2/microsoft.extensions.logging.abstractions.10.0.2.nupkg.sha512",
+    "/home/thekraken9/.nuget/packages/microsoft.extensions.options/10.0.2/microsoft.extensions.options.10.0.2.nupkg.sha512",
+    "/home/thekraken9/.nuget/packages/microsoft.extensions.primitives/10.0.2/microsoft.extensions.primitives.10.0.2.nupkg.sha512",
     "/home/thekraken9/.nuget/packages/microsoft.identity.client/4.76.0/microsoft.identity.client.4.76.0.nupkg.sha512",
     "/home/thekraken9/.nuget/packages/microsoft.identity.client.extensions.msal/4.76.0/microsoft.identity.client.extensions.msal.4.76.0.nupkg.sha512",
     "/home/thekraken9/.nuget/packages/microsoft.identitymodel.abstractions/8.14.0/microsoft.identitymodel.abstractions.8.14.0.nupkg.sha512",
@@ -47,10 +56,12 @@
     "/home/thekraken9/.nuget/packages/system.composition.runtime/9.0.0/system.composition.runtime.9.0.0.nupkg.sha512",
     "/home/thekraken9/.nuget/packages/system.composition.typedparts/9.0.0/system.composition.typedparts.9.0.0.nupkg.sha512",
     "/home/thekraken9/.nuget/packages/system.configuration.configurationmanager/9.0.9/system.configuration.configurationmanager.9.0.9.nupkg.sha512",
+    "/home/thekraken9/.nuget/packages/system.diagnostics.eventlog/9.0.9/system.diagnostics.eventlog.9.0.9.nupkg.sha512",
     "/home/thekraken9/.nuget/packages/system.identitymodel.tokens.jwt/8.14.0/system.identitymodel.tokens.jwt.8.14.0.nupkg.sha512",
     "/home/thekraken9/.nuget/packages/system.memory.data/8.0.1/system.memory.data.8.0.1.nupkg.sha512",
     "/home/thekraken9/.nuget/packages/system.security.cryptography.pkcs/9.0.9/system.security.cryptography.pkcs.9.0.9.nupkg.sha512",
-    "/home/thekraken9/.nuget/packages/system.security.cryptography.protecteddata/9.0.9/system.security.cryptography.protecteddata.9.0.9.nupkg.sha512"
+    "/home/thekraken9/.nuget/packages/system.security.cryptography.protecteddata/9.0.9/system.security.cryptography.protecteddata.9.0.9.nupkg.sha512",
+    "/home/thekraken9/.nuget/packages/microsoft.aspnetcore.app.ref/10.0.0/microsoft.aspnetcore.app.ref.10.0.0.nupkg.sha512"
   ],
   "logs": []
 }

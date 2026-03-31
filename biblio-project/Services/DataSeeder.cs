@@ -73,7 +73,7 @@ public class DataSeeder : IDataSeeder
     {
         var query = "SELECT COUNT(*) FROM Books";
         using var command = new SqlCommand(query, connection);
-        var count = (int)await command.ExecuteScalarAsync();
+        var count = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
         return count > 0;
     }
 
@@ -95,7 +95,7 @@ public class DataSeeder : IDataSeeder
         {
             using var checkCmd = new SqlCommand(checkQuery, connection, transaction);
             checkCmd.Parameters.AddWithValue("@Name", name);
-            var exists = (int)await checkCmd.ExecuteScalarAsync() > 0;
+            var exists = (int)(await checkCmd.ExecuteScalarAsync() ?? throw new InvalidOperationException()) > 0;
 
             if (!exists)
             {
@@ -366,7 +366,7 @@ public class DataSeeder : IDataSeeder
         using (var checkCmd = new SqlCommand(checkQuery, connection, transaction))
         {
             checkCmd.Parameters.AddWithValue("@Username", "lecteur");
-            var exists = (int)await checkCmd.ExecuteScalarAsync() > 0;
+            var exists = (int)(await checkCmd.ExecuteScalarAsync() ?? throw new InvalidOperationException()) > 0;
             if (exists) return;
         }
 
@@ -386,7 +386,7 @@ public class DataSeeder : IDataSeeder
             cmd.Parameters.AddWithValue("@FirstName", "Jean");
             cmd.Parameters.AddWithValue("@LastName", "Dupont");
             cmd.Parameters.AddWithValue("@PhoneNumber", "0612345678");
-            userId = (int)await cmd.ExecuteScalarAsync();
+            userId = (int)(await cmd.ExecuteScalarAsync() ?? throw new InvalidOperationException());
         }
 
         // Attribuer le rôle MEMBER

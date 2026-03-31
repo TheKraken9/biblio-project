@@ -6,24 +6,18 @@ namespace biblio_project.Controllers;
 
 [ApiController]
 [Route("api/reservations")]
-public class ReservationsApiController : ControllerBase
+public class ReservationsApiController(IConfiguration configuration) : ControllerBase
 {
-    private readonly string _connectionString;
-    private readonly int _maxReservations;
-
-    public ReservationsApiController(IConfiguration configuration)
-    {
-        _connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string not found");
-        _maxReservations = 3;
-    }
+    private readonly string _connectionString = configuration.GetConnectionString("DefaultConnection")
+                                                ?? throw new InvalidOperationException("Connection string not found");
+    private readonly int _maxReservations = 3;
 
     [HttpPost("reserve")]
     public async Task<ActionResult<ApiResponse<Reservation>>> ReserveBook([FromBody] ReserveBookRequest request)
     {
         try
         {
-            using var connection = new SqlConnection(_connectionString);
+            await using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
             // Vérifier que l'utilisateur existe
@@ -82,7 +76,7 @@ public class ReservationsApiController : ControllerBase
             // Calculer la position dans la file d'attente
             var position = await GetNextQueuePositionAsync(connection, request.BookId);
 
-            using var transaction = connection.BeginTransaction();
+            await using var transaction = connection.BeginTransaction();
             try
             {
                 var insertQuery = @"
@@ -101,7 +95,7 @@ public class ReservationsApiController : ControllerBase
                     command.Parameters.AddWithValue("@BookTitle", bookInfo.Title);
                     command.Parameters.AddWithValue("@RequesterName", userInfo.FullName);
 
-                    reservationId = (int)await command.ExecuteScalarAsync();
+                    reservationId = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
                 }
 
                 transaction.Commit();
@@ -291,7 +285,7 @@ public class ReservationsApiController : ControllerBase
         var query = "SELECT COUNT(*) FROM library_user WHERE Id = @UserId AND IsActive = 1";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
-        var count = (int)await command.ExecuteScalarAsync();
+        var count = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
         return count > 0;
     }
 
@@ -300,7 +294,7 @@ public class ReservationsApiController : ControllerBase
         var query = "SELECT COUNT(*) FROM Reservations WHERE RequesterId = @UserId AND Status IN ('Pending', 'ReadyForPickup')";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
-        return (int)await command.ExecuteScalarAsync();
+        return (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
     }
 
     private async Task<bool> HasActiveReservationForBookAsync(SqlConnection connection, int userId, int bookId)
@@ -315,7 +309,7 @@ public class ReservationsApiController : ControllerBase
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
         command.Parameters.AddWithValue("@BookId", bookId);
-        var count = (int)await command.ExecuteScalarAsync();
+        var count = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
         return count > 0;
     }
 
@@ -368,7 +362,7 @@ public class ReservationsApiController : ControllerBase
 
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@BookId", bookId);
-        return (int)await command.ExecuteScalarAsync();
+        return (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
     }
 
     private async Task ReorganizeQueueAsync(SqlConnection connection, SqlTransaction transaction, int bookId)
