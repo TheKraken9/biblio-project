@@ -116,7 +116,7 @@ public class CatalogController : Controller
         var query = @"
             SELECT DISTINCT a.Id, a.FirstName, a.LastName, a.BirthYear, a.DeathYear
             FROM Author a
-            INNER JOIN BookAuthor ba ON a.Id = ba.AuthorId
+            INNER JOIN BookAuthors ba ON a.Id = ba.AuthorId
             ORDER BY a.LastName, a.FirstName";
 
         using var command = new SqlCommand(query, connection);
@@ -161,7 +161,7 @@ public class CatalogController : Controller
 
         if (model.AuthorId.HasValue)
         {
-            whereClause.Add("EXISTS (SELECT 1 FROM BookAuthor ba WHERE ba.BookId = b.Id AND ba.AuthorId = @AuthorId)");
+            whereClause.Add("EXISTS (SELECT 1 FROM BookAuthors ba WHERE ba.BookId = b.Id AND ba.AuthorId = @AuthorId)");
             parameters.Add(new SqlParameter("@AuthorId", model.AuthorId.Value));
         }
 
@@ -179,7 +179,7 @@ public class CatalogController : Controller
         var whereCondition = whereClause.Count > 0 ? "WHERE " + string.Join(" AND ", whereClause) : "";
 
         // COUNT (une seule fois)
-        var countQuery = $"SELECT COUNT(*) FROM Book b {whereCondition}";
+        var countQuery = $"SELECT COUNT(*) FROM Books b {whereCondition}";
         int totalCount;
         using (var countCommand = new SqlCommand(countQuery, connection))
         {
@@ -198,7 +198,7 @@ public class CatalogController : Controller
                    b.CoverImageUrl, b.AuthorNamesText, b.CategoryNamesText,
                    b.AvailableCopiesCount, b.TotalCopiesCount,
                    c.Name as MainCategoryName, p.Name as PublisherName
-            FROM Book b
+            FROM Books b
             LEFT JOIN Category c ON b.MainCategoryId = c.Id
             LEFT JOIN Publisher p ON b.PublisherId = p.Id
             {whereCondition}
@@ -243,7 +243,7 @@ public class CatalogController : Controller
                    b.CoverImageUrl, b.AuthorNamesText, b.CategoryNamesText,
                    b.AvailableCopiesCount, b.TotalCopiesCount,
                    p.Name as PublisherName
-            FROM Book b
+            FROM Books b
             LEFT JOIN Publisher p ON b.PublisherId = p.Id
             WHERE b.Id = @BookId";
 
@@ -285,7 +285,7 @@ public class CatalogController : Controller
         var query = @"
             SELECT a.Id, a.FirstName, a.LastName, a.BirthYear, a.DeathYear, a.Bio
             FROM Author a
-            INNER JOIN BookAuthor ba ON a.Id = ba.AuthorId
+            INNER JOIN BookAuthors ba ON a.Id = ba.AuthorId
             WHERE ba.BookId = @BookId
             ORDER BY a.LastName, a.FirstName";
 

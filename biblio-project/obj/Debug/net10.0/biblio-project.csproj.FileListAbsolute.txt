@@ -157,7 +157,6 @@
 /home/thekraken9/RiderProjects/biblio-project/biblio-project/obj/Debug/net10.0/scopedcss/Views/Shared/_Layout.cshtml.rz.scp.css
 /home/thekraken9/RiderProjects/biblio-project/biblio-project/obj/Debug/net10.0/scopedcss/bundle/biblio-project.styles.css
 /home/thekraken9/RiderProjects/biblio-project/biblio-project/obj/Debug/net10.0/scopedcss/projectbundle/biblio-project.bundle.scp.css
-/home/thekraken9/RiderProjects/biblio-project/biblio-project/obj/Debug/net10.0/compressed/renqf6cms4-{0}-yyyy8vosxe-yyyy8vosxe.gz
 /home/thekraken9/RiderProjects/biblio-project/biblio-project/obj/Debug/net10.0/compressed/9wd2e1m2ls-{0}-61n19gt1b8-61n19gt1b8.gz
 /home/thekraken9/RiderProjects/biblio-project/biblio-project/obj/Debug/net10.0/compressed/chwcbrfz8m-{0}-atggi6aln6-atggi6aln6.gz
 /home/thekraken9/RiderProjects/biblio-project/biblio-project/obj/Debug/net10.0/compressed/qcfycggs3k-{0}-bqjiyaj88i-bqjiyaj88i.gz
@@ -232,3 +231,4 @@
 /home/thekraken9/RiderProjects/biblio-project/biblio-project/obj/Debug/net10.0/biblio-project.pdb
 /home/thekraken9/RiderProjects/biblio-project/biblio-project/obj/Debug/net10.0/biblio-project.genruntimeconfig.cache
 /home/thekraken9/RiderProjects/biblio-project/biblio-project/obj/Debug/net10.0/ref/biblio-project.dll
+/home/thekraken9/RiderProjects/biblio-project/biblio-project/obj/Debug/net10.0/compressed/renqf6cms4-{0}-e33wmi6v7z-e33wmi6v7z.gz
