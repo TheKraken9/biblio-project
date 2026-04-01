@@ -146,18 +146,6 @@ var isAuthenticated = !string.IsNullOrEmpty(authenticatedUserId);
             }
         </div>
 
-        <!-- Résumé -->
-        @if (!string.IsNullOrEmpty(Model.Summary))
-        {
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title" style="font-size:1rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-muted);margin-bottom:.75rem">
-                    <i class="fas fa-align-left me-2"></i>Résumé
-                </h5>
-                <p class="mb-0" style="line-height:1.8">@Model.Summary</p>
-            </div>
-        </div>
-        }
 
         <!-- Biographies auteurs -->
         @if (Model.Authors.Any(a => !string.IsNullOrEmpty(a.Bio)))

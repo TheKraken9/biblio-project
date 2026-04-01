@@ -5,7 +5,6 @@ public class BookDetail
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Subtitle { get; set; }
-    public string? Summary { get; set; }
     public int? PublicationYear { get; set; }
     public string? CoverImageUrl { get; set; }
     public string? AuthorNamesText { get; set; }

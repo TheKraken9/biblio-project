@@ -143,7 +143,7 @@ public class BooksApiController : ControllerBase
         BookDetail? book = null;
 
         var query = @"
-            SELECT b.Id, b.Title, b.Subtitle, b.Keyword, b.PublicationYear,
+            SELECT b.Id, b.Title, b.Subtitle, b.PublicationYear,
                    b.CoverImageUrl, b.AuthorNamesText, b.CategoryNamesText,
                    b.AvailableCopiesCount, b.TotalCopiesCount,
                    p.Name as PublisherName
@@ -163,14 +163,13 @@ public class BooksApiController : ControllerBase
                     Id = reader.GetInt32(0),
                     Title = reader.GetString(1),
                     Subtitle = reader.IsDBNull(2) ? null : reader.GetString(2),
-                    Summary = reader.IsDBNull(3) ? null : reader.GetString(3), // Keyword comme résumé
-                    PublicationYear = reader.IsDBNull(4) ? null : reader.GetInt32(4),
-                    CoverImageUrl = reader.IsDBNull(5) ? null : reader.GetString(5),
-                    AuthorNamesText = reader.IsDBNull(6) ? null : reader.GetString(6),
-                    CategoryNamesText = reader.IsDBNull(7) ? null : reader.GetString(7),
-                    AvailableCopiesCount = reader.GetInt32(8),
-                    TotalCopiesCount = reader.GetInt32(9),
-                    PublisherName = reader.IsDBNull(10) ? null : reader.GetString(10)
+                    PublicationYear = reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                    CoverImageUrl = reader.IsDBNull(4) ? null : reader.GetString(4),
+                    AuthorNamesText = reader.IsDBNull(5) ? null : reader.GetString(5),
+                    CategoryNamesText = reader.IsDBNull(6) ? null : reader.GetString(6),
+                    AvailableCopiesCount = reader.GetInt32(7),
+                    TotalCopiesCount = reader.GetInt32(8),
+                    PublisherName = reader.IsDBNull(9) ? null : reader.GetString(9)
                 };
             }
         }

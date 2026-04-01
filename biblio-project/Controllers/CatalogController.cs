@@ -146,10 +146,9 @@ public class CatalogController : Controller
         if (!string.IsNullOrWhiteSpace(model.SearchQuery))
         {
             // Recherche full-text avec CONTAINS si l'index existe, fallback LIKE
-            whereClause.Add(@"(b.Title LIKE @Search 
-                               OR b.AuthorNamesText LIKE @Search 
-                               OR b.CategoryNamesText LIKE @Search
-                               OR b.Summary LIKE @Search)");
+            whereClause.Add(@"(b.Title LIKE @Search
+                               OR b.AuthorNamesText LIKE @Search
+                               OR b.CategoryNamesText LIKE @Search)");
             parameters.Add(new SqlParameter("@Search", $"%{model.SearchQuery}%"));
         }
 
@@ -194,7 +193,7 @@ public class CatalogController : Controller
         // Livres paginés
         var offset = (model.CurrentPage - 1) * model.PageSize;
         var query = $@"
-            SELECT b.Id, b.Title, b.Subtitle, b.Summary, b.PublicationYear,
+            SELECT b.Id, b.Title, b.Subtitle, b.PublicationYear,
                    b.CoverImageUrl, b.AuthorNamesText, b.CategoryNamesText,
                    b.AvailableCopiesCount, b.TotalCopiesCount,
                    p.Name as PublisherName
@@ -218,14 +217,13 @@ public class CatalogController : Controller
                 Id = reader.GetInt32(0),
                 Title = reader.GetString(1),
                 Subtitle = reader.IsDBNull(2) ? null : reader.GetString(2),
-                Summary = reader.IsDBNull(3) ? null : reader.GetString(3),
-                PublicationYear = reader.IsDBNull(4) ? null : reader.GetInt32(4),
-                CoverImageUrl = reader.IsDBNull(5) ? null : reader.GetString(5),
-                AuthorNamesText = reader.IsDBNull(6) ? null : reader.GetString(6),
-                CategoryNamesText = reader.IsDBNull(7) ? null : reader.GetString(7),
-                AvailableCopiesCount = reader.GetInt32(8),
-                TotalCopiesCount = reader.GetInt32(9),
-                PublisherName = reader.IsDBNull(10) ? null : reader.GetString(10)
+                PublicationYear = reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                CoverImageUrl = reader.IsDBNull(4) ? null : reader.GetString(4),
+                AuthorNamesText = reader.IsDBNull(5) ? null : reader.GetString(5),
+                CategoryNamesText = reader.IsDBNull(6) ? null : reader.GetString(6),
+                AvailableCopiesCount = reader.GetInt32(7),
+                TotalCopiesCount = reader.GetInt32(8),
+                PublisherName = reader.IsDBNull(9) ? null : reader.GetString(9)
             });
         }
 
@@ -237,7 +235,7 @@ public class CatalogController : Controller
         BookDetail? book = null;
 
         var query = @"
-            SELECT b.Id, b.Title, b.Subtitle, b.Summary, b.PublicationYear,
+            SELECT b.Id, b.Title, b.Subtitle, b.PublicationYear,
                    b.CoverImageUrl, b.AuthorNamesText, b.CategoryNamesText,
                    b.AvailableCopiesCount, b.TotalCopiesCount,
                    p.Name as PublisherName
@@ -257,14 +255,13 @@ public class CatalogController : Controller
                     Id = reader.GetInt32(0),
                     Title = reader.GetString(1),
                     Subtitle = reader.IsDBNull(2) ? null : reader.GetString(2),
-                    Summary = reader.IsDBNull(3) ? null : reader.GetString(3),
-                    PublicationYear = reader.IsDBNull(4) ? null : reader.GetInt32(4),
-                    CoverImageUrl = reader.IsDBNull(5) ? null : reader.GetString(5),
-                    AuthorNamesText = reader.IsDBNull(6) ? null : reader.GetString(6),
-                    CategoryNamesText = reader.IsDBNull(7) ? null : reader.GetString(7),
-                    AvailableCopiesCount = reader.GetInt32(8),
-                    TotalCopiesCount = reader.GetInt32(9),
-                    PublisherName = reader.IsDBNull(10) ? null : reader.GetString(10)
+                    PublicationYear = reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                    CoverImageUrl = reader.IsDBNull(4) ? null : reader.GetString(4),
+                    AuthorNamesText = reader.IsDBNull(5) ? null : reader.GetString(5),
+                    CategoryNamesText = reader.IsDBNull(6) ? null : reader.GetString(6),
+                    AvailableCopiesCount = reader.GetInt32(7),
+                    TotalCopiesCount = reader.GetInt32(8),
+                    PublisherName = reader.IsDBNull(9) ? null : reader.GetString(9)
                 };
             }
         }
