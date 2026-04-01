@@ -154,7 +154,7 @@ public class CatalogController : Controller
 
         if (model.CategoryId.HasValue)
         {
-            whereClause.Add("EXISTS (SELECT 1 FROM BookCategory bc WHERE bc.BookId = b.Id AND bc.CategoryId = @CategoryId)");
+            whereClause.Add("EXISTS (SELECT 1 FROM BookCategories bc WHERE bc.BookId = b.Id AND bc.CategoryId = @CategoryId)");
             parameters.Add(new SqlParameter("@CategoryId", model.CategoryId.Value));
         }
 
@@ -310,7 +310,7 @@ public class CatalogController : Controller
         var query = @"
             SELECT c.Id, c.Name, c.Description
             FROM Category c
-            INNER JOIN BookCategory bc ON c.Id = bc.CategoryId
+            INNER JOIN BookCategories bc ON c.Id = bc.CategoryId
             WHERE bc.BookId = @BookId
             ORDER BY c.Name";
 
