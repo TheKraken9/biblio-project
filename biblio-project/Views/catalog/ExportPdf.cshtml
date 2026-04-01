@@ -277,13 +277,13 @@
                 Aucun livre trouvé avec les filtres appliqués.
             </p>
         }
+    </div>
 
-        <!-- Pied de tableau -->
-        <div class="pdf-footer">
-            <span>Bibliothèque — Système de Gestion</span>
-            <span>Total : @Model.TotalBooks livre(s) · Disponibles : @Model.Books.Count(b => b.AvailableCopiesCount > 0) · Indisponibles : @Model.Books.Count(b => b.AvailableCopiesCount == 0)</span>
-            <span>Page générée le @dateExport</span>
-        </div>
+    <!-- Pied de tableau -->
+    <div class="pdf-footer">
+        <span>Bibliothèque — Système de Gestion</span>
+        <span>Total : @Model.TotalBooks livre(s) · Disponibles : @Model.Books.Count(b => b.AvailableCopiesCount > 0) · Indisponibles : @Model.Books.Count(b => b.AvailableCopiesCount == 0)</span>
+        <span>Page générée le @dateExport</span>
     </div>
 
 </body>
