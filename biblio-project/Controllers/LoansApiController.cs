@@ -119,7 +119,7 @@ public class LoansApiController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<Loan>.Fail("Erreur lors de l'emprunt du livre"));
+            return StatusCode(500, ApiResponse<Loan>.Fail($"Erreur lors de l'emprunt du livre : {ex.Message}"));
         }
     }
 
