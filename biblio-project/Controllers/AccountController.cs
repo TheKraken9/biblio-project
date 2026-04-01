@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using biblio_project.Models;
 using biblio_project.Services;
-using System.Data.SqlClient;
 using Microsoft.Data.SqlClient;
 
 namespace biblio_project.Controllers;
@@ -16,7 +15,7 @@ public class AccountController : Controller
 
     public AccountController(IConfiguration configuration, IPasswordHasher passwordHasher)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection") 
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string not found");
         _passwordHasher = passwordHasher;
     }
@@ -47,7 +46,7 @@ public class AccountController : Controller
         // Rechercher l'utilisateur par username ou email
         var query = @"
             SELECT Id, Username, Email, PasswordHash, FirstName, LastName, IsActive
-            FROM LibraryUser
+            FROM library_user
             WHERE (Username = @UsernameOrEmail OR Email = @UsernameOrEmail)";
 
         LibraryUser? user = null;
@@ -62,7 +61,7 @@ public class AccountController : Controller
             {
                 user = new LibraryUser
                 {
-                    Id = reader.GetGuid(0),
+                    Id = reader.GetInt32(0),
                     Username = reader.GetString(1),
                     Email = reader.GetString(2),
                     FirstName = reader.GetString(4),
@@ -152,12 +151,12 @@ public class AccountController : Controller
         await connection.OpenAsync();
 
         // Vérifier si l'utilisateur existe déjà
-        var checkQuery = "SELECT COUNT(*) FROM LibraryUser WHERE Username = @Username OR Email = @Email";
+        var checkQuery = "SELECT COUNT(*) FROM library_user WHERE Username = @Username OR Email = @Email";
         using (var checkCommand = new SqlCommand(checkQuery, connection))
         {
             checkCommand.Parameters.AddWithValue("@Username", model.Username);
             checkCommand.Parameters.AddWithValue("@Email", model.Email);
-            var count = (int)await checkCommand.ExecuteScalarAsync();
+            var count = (int)(await checkCommand.ExecuteScalarAsync() ?? throw new InvalidOperationException());
 
             if (count > 0)
             {
@@ -172,13 +171,13 @@ public class AccountController : Controller
             // Hasher le mot de passe
             var passwordHash = _passwordHasher.HashPassword(model.Password);
 
-            // Créer l'utilisateur
+            // Créer l'utilisateur (Id est auto-généré car c'est un IDENTITY)
             var insertUserQuery = @"
-                INSERT INTO LibraryUser (Id, Username, Email, PasswordHash, FirstName, LastName, PhoneNumber, IsActive, RegistrationDate)
+                INSERT INTO library_user (Username, Email, PasswordHash, FirstName, LastName, PhoneNumber, IsActive, CreatedAt, RegistrationDate)
                 OUTPUT INSERTED.Id
-                VALUES (NEWID(), @Username, @Email, @PasswordHash, @FirstName, @LastName, @PhoneNumber, 1, GETDATE())";
+                VALUES (@Username, @Email, @PasswordHash, @FirstName, @LastName, @PhoneNumber, 1, GETDATE(), GETDATE())";
 
-            Guid userId;
+            int userId;
             using (var command = new SqlCommand(insertUserQuery, connection, transaction))
             {
                 command.Parameters.AddWithValue("@Username", model.Username);
@@ -188,13 +187,13 @@ public class AccountController : Controller
                 command.Parameters.AddWithValue("@LastName", model.LastName);
                 command.Parameters.AddWithValue("@PhoneNumber", (object?)model.PhoneNumber ?? DBNull.Value);
 
-                userId = (Guid)await command.ExecuteScalarAsync();
+                userId = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
             }
 
             // Attribuer le rôle MEMBER par défaut
             var insertRoleQuery = @"
-                INSERT INTO UserRole (UserId, RoleId)
-                SELECT @UserId, Id FROM Role WHERE Name = 'MEMBER'";
+                INSERT INTO user_role (UserId, RoleId)
+                SELECT @UserId, Id FROM role WHERE Name = 'MEMBER'";
 
             using (var command = new SqlCommand(insertRoleQuery, connection, transaction))
             {
@@ -249,13 +248,13 @@ public class AccountController : Controller
             return View(model);
         }
 
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
 
         // Récupérer le hash actuel
-        var query = "SELECT PasswordHash FROM LibraryUser WHERE Id = @UserId";
+        var query = "SELECT PasswordHash FROM library_user WHERE Id = @UserId";
         string currentPasswordHash;
 
         using (var command = new SqlCommand(query, connection))
@@ -265,7 +264,7 @@ public class AccountController : Controller
         }
 
         // Vérifier le mot de passe actuel
-        if (!_passwordHasher.VerifyPassword(model.CurrentPassword, currentPasswordHash))
+        if (currentPasswordHash != null && !_passwordHasher.VerifyPassword(model.CurrentPassword, currentPasswordHash))
         {
             ModelState.AddModelError(nameof(model.CurrentPassword), "Le mot de passe actuel est incorrect");
             return View(model);
@@ -274,8 +273,8 @@ public class AccountController : Controller
         // Hasher le nouveau mot de passe
         var newPasswordHash = _passwordHasher.HashPassword(model.NewPassword);
 
-        // Mettre à jour le mot de passe
-        var updateQuery = "UPDATE LibraryUser SET PasswordHash = @PasswordHash, UpdatedAt = GETDATE() WHERE Id = @UserId";
+        // Mettre à jour le mot de passe (note: library_user n'a pas de colonne UpdatedAt selon le schéma)
+        var updateQuery = "UPDATE library_user SET PasswordHash = @PasswordHash WHERE Id = @UserId";
         using (var command = new SqlCommand(updateQuery, connection))
         {
             command.Parameters.AddWithValue("@PasswordHash", newPasswordHash);
@@ -293,13 +292,13 @@ public class AccountController : Controller
         return View();
     }
 
-    private async Task<List<string>> GetUserRolesAsync(SqlConnection connection, Guid userId)
+    private async Task<List<string>> GetUserRolesAsync(SqlConnection connection, int userId)
     {
         var roles = new List<string>();
         var query = @"
             SELECT r.Name
-            FROM Role r
-            INNER JOIN UserRole ur ON r.Id = ur.RoleId
+            FROM role r
+            INNER JOIN user_role ur ON r.Id = ur.RoleId
             WHERE ur.UserId = @UserId";
 
         using var command = new SqlCommand(query, connection);

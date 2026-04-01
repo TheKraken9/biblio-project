@@ -1,308 +1,388 @@
 @model biblio_project.Models.UserDashboardViewModel
 
 @{
-    ViewData["Title"] = "Mon Espace";
+ViewData["Title"] = "Mon Espace";
+var userId = Model.User.Id.ToString();
+var overdueCount = Model.CurrentLoans.Count(l => l.IsOverdue);
+var dueSoonCount = Model.CurrentLoans.Count(l => !l.IsOverdue && l.DaysUntilDue <= 3);
 }
 
-<div class="row mb-4">
-    <div class="col-12">
-        <h1 class="display-4">
-            <i class="fas fa-user"></i> Mon Espace
+<!-- En-tête -->
+<div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+        <h1 style="font-family:'Playfair Display',serif;font-style:italic;margin-bottom:.2rem">
+            Bonjour, @Model.User.FirstName&nbsp;!
         </h1>
-        <p class="lead">Bienvenue, <strong>@Model.User.FullName</strong></p>
+        <p class="text-ink-muted mb-0" style="font-size:.9rem">
+            <i class="fas fa-user-circle me-1"></i>@Model.User.Username &nbsp;·&nbsp;
+            <i class="fas fa-envelope me-1"></i>@Model.User.Email
+        </p>
+    </div>
+    <a asp-controller="Account" asp-action="ChangePassword" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-key me-1"></i>Changer le mot de passe
+    </a>
+</div>
+
+<!-- Alertes retards -->
+@if (overdueCount > 0)
+{
+<div class="alert alert-danger d-flex align-items-center gap-3 mb-4">
+    <i class="fas fa-exclamation-triangle fa-lg flex-shrink-0"></i>
+    <div>
+        <strong>@overdueCount emprunt(s) en retard !</strong>
+        Veuillez retourner ces livres dès que possible.
+    </div>
+</div>
+}
+@if (dueSoonCount > 0 && overdueCount == 0)
+{
+<div class="alert alert-warning d-flex align-items-center gap-3 mb-4">
+    <i class="fas fa-clock fa-lg flex-shrink-0"></i>
+    <div>
+        <strong>@dueSoonCount emprunt(s) arrivent à échéance dans 3 jours ou moins.</strong>
+        Pensez à les renouveler ou à les retourner.
+    </div>
+</div>
+}
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <span class="stat-icon text-bordeaux"><i class="fas fa-book-reader"></i></span>
+            <div class="stat-number text-bordeaux">@Model.CurrentLoans.Count<span style="font-size:1rem;color:var(--ink-muted)">/@Model.MaxConcurrentLoans</span></div>
+            <div class="stat-label">Emprunts en cours</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <span class="stat-icon" style="color:var(--gold)"><i class="fas fa-bookmark"></i></span>
+            <div class="stat-number" style="color:var(--gold)">@Model.ActiveReservations.Count<span style="font-size:1rem;color:var(--ink-muted)">/@Model.MaxReservations</span></div>
+            <div class="stat-label">Réservations</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <span class="stat-icon" style="color:#DC2626"><i class="fas fa-exclamation-triangle"></i></span>
+            <div class="stat-number" style="color:@(overdueCount > 0 ? "#DC2626" : "var(--sage)")">@overdueCount</div>
+            <div class="stat-label">Retards</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <span class="stat-icon" style="color:var(--sage)"><i class="fas fa-check-circle"></i></span>
+            <div class="stat-number" style="color:var(--sage)">@(Model.CanBorrowMore ? "Oui" : "Non")</div>
+            <div class="stat-label">Peut emprunter</div>
+        </div>
     </div>
 </div>
 
-<!-- Statistiques -->
-<div class="row mb-4">
-    <div class="col-md-4 mb-3">
-        <div class="card shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-book-reader fa-3x text-primary mb-3"></i>
-                <h3>@Model.CurrentLoans.Count / @Model.MaxConcurrentLoans</h3>
-                <p class="text-muted mb-0">Emprunts en cours</p>
-            </div>
-        </div>
+<!-- Emprunts en attente de validation -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background-color:#f59e0b;color:white">
+        <span><i class="fas fa-hourglass-half me-2"></i>Emprunts en attente de validation</span>
+        <span class="badge" style="background:rgba(255,255,255,.25);color:white">@Model.PendingLoans.Count</span>
     </div>
-    
-    <div class="col-md-4 mb-3">
-        <div class="card shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-bookmark fa-3x text-warning mb-3"></i>
-                <h3>@Model.ActiveReservations.Count / @Model.MaxReservations</h3>
-                <p class="text-muted mb-0">Réservations actives</p>
-            </div>
+    <div class="card-body p-0">
+        @if (Model.PendingLoans.Any())
+        {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>Livre</th>
+                    <th>Demandé le</th>
+                    <th>Date de retour prévue</th>
+                    <th>Statut</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var loan in Model.PendingLoans)
+                {
+                <tr>
+                    <td data-label="Livre">
+                        <a asp-controller="Catalog" asp-action="Details" asp-route-id="@loan.BookId"
+                           style="font-family:'Playfair Display',serif;font-weight:600;color:var(--bordeaux);font-size:1rem">
+                            @loan.BookTitleSnapshot
+                        </a>
+                    </td>
+                    <td data-label="Demandé le">@loan.LoanDate.ToString("dd/MM/yyyy")</td>
+                    <td data-label="Date de retour prévue">@loan.DueDate.ToString("dd/MM/yyyy")</td>
+                    <td data-label="Statut">
+                        <span class="badge" style="background-color:#f59e0b">En attente de validation</span>
+                    </td>
+                </tr>
+                }
+                </tbody>
+            </table>
         </div>
-    </div>
-    
-    <div class="col-md-4 mb-3">
-        <div class="card shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
-                <h3>@Model.CurrentLoans.Count(l => l.IsOverdue)</h3>
-                <p class="text-muted mb-0">Retards</p>
-            </div>
+        }
+        else
+        {
+        <div class="text-center py-4 px-3">
+            <p class="mb-0" style="color:var(--ink-muted);font-style:italic">Aucun emprunt en attente de validation</p>
         </div>
+        }
     </div>
 </div>
 
 <!-- Emprunts en cours -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-book-reader"></i> Mes emprunts en cours
-                </h5>
-            </div>
-            <div class="card-body">
-                @if (Model.CurrentLoans.Any())
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-book-reader me-2"></i>Mes emprunts en cours</span>
+        <a asp-controller="Catalog" asp-action="Index" class="btn btn-sm" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3)">
+            <i class="fas fa-plus me-1"></i>Emprunter un livre
+        </a>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.CurrentLoans.Any())
+        {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>Livre</th>
+                    <th>Emprunté le</th>
+                    <th>À retourner le</th>
+                    <th>Renouvellements</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var loan in Model.CurrentLoans.OrderBy(l => l.DueDate))
                 {
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Livre</th>
-                                    <th>Date d'emprunt</th>
-                                    <th>Date de retour</th>
-                                    <th>Statut</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var loan in Model.CurrentLoans.OrderBy(l => l.DueDate))
-                                {
-                                    <tr class="@(loan.IsOverdue ? "table-danger" : "")">
-                                        <td>
-                                            <strong>@loan.BookTitleSnapshot</strong>
-                                        </td>
-                                        <td>@loan.LoanDate.ToString("dd/MM/yyyy")</td>
-                                        <td>
-                                            @loan.DueDate.ToString("dd/MM/yyyy")
-                                            @if (loan.IsOverdue)
-                                            {
-                                                <br />
-                                                <span class="badge bg-danger">
-                                                    <i class="fas fa-exclamation-triangle"></i> En retard
-                                                </span>
-                                            }
-                                            else if (loan.DaysUntilDue <= 3)
-                                            {
-                                                <br />
-                                                <span class="badge bg-warning">
-                                                    <i class="fas fa-clock"></i> @loan.DaysUntilDue jour(s) restant(s)
-                                                </span>
-                                            }
-                                        </td>
-                                        <td>
-                                            @if (loan.RenewalCount > 0)
-                                            {
-                                                <span class="badge bg-info">
-                                                    Renouvelé @loan.RenewalCount fois
-                                                </span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-success">En cours</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            <a asp-controller="Catalog" asp-action="Details" asp-route-id="@loan.BookId" 
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-info-circle"></i> Détails
-                                            </a>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                else
-                {
-                    <div class="alert alert-info text-center">
-                        <i class="fas fa-info-circle fa-2x mb-3"></i>
-                        <p class="mb-0">Vous n'avez aucun emprunt en cours</p>
-                        <a asp-controller="Catalog" asp-action="Index" class="btn btn-primary mt-3">
-                            Parcourir le catalogue
+                <tr class="@(loan.IsOverdue ? "table-danger" : "")">
+                    <td data-label="Livre">
+                        <a asp-controller="Catalog" asp-action="Details" asp-route-id="@loan.BookId"
+                           style="font-family:'Playfair Display',serif;font-weight:600;color:var(--bordeaux);font-size:1rem">
+                            @loan.BookTitleSnapshot
                         </a>
-                    </div>
+                    </td>
+                    <td data-label="Emprunté le">@loan.LoanDate.ToString("dd/MM/yyyy")</td>
+                    <td data-label="À retourner le">
+                        <span style="font-weight:600">@loan.DueDate.ToString("dd/MM/yyyy")</span>
+                        @if (loan.IsOverdue)
+                        {
+                        <br><span class="badge bg-danger mt-1">En retard</span>
+                        }
+                        else if (loan.DaysUntilDue <= 3)
+                        {
+                        <br><span class="badge bg-warning mt-1">@loan.DaysUntilDue j. restant(s)</span>
+                        }
+                    </td>
+                    <td data-label="Renouvellements">
+                        <span class="badge bg-secondary">@loan.RenewalCount / 2</span>
+                    </td>
+                    <td data-label="Statut">
+                        @if (loan.IsOverdue)
+                        {
+                        <span class="badge bg-danger">En retard</span>
+                        }
+                        else
+                        {
+                        <span class="badge bg-success">En cours</span>
+                        }
+                    </td>
+                    <td data-label="Actions">
+                        @if (loan.RenewalCount < 2 && !loan.IsOverdue)
+                        {
+                        <button class="btn btn-sm btn-outline-primary"
+                                onclick="renewLoan(@loan.Id)">
+                            <i class="fas fa-redo me-1"></i>Renouveler
+                        </button>
+                        }
+                        else if (loan.RenewalCount >= 2)
+                        {
+                        <span class="text-ink-muted" style="font-size:.8rem;font-style:italic">Renouvellements épuisés</span>
+                        }
+                    </td>
+                </tr>
                 }
-            </div>
+                </tbody>
+            </table>
         </div>
+        }
+        else
+        {
+        <div class="text-center py-5 px-3">
+            <i class="fas fa-book-open fa-3x text-ink-muted mb-3"></i>
+            <p class="mb-2" style="color:var(--ink-muted)">Vous n'avez aucun emprunt en cours</p>
+            <a asp-controller="Catalog" asp-action="Index" class="btn btn-primary btn-sm">
+                Parcourir le catalogue
+            </a>
+        </div>
+        }
     </div>
 </div>
 
 <!-- Réservations actives -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card shadow-sm">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="fas fa-bookmark"></i> Mes réservations
-                </h5>
-            </div>
-            <div class="card-body">
-                @if (Model.ActiveReservations.Any())
+<div class="card mb-4">
+    <div class="card-header bg-warning text-white">
+        <i class="fas fa-bookmark me-2"></i>Mes réservations actives
+    </div>
+    <div class="card-body p-0">
+        @if (Model.ActiveReservations.Any())
+        {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>Livre</th>
+                    <th>Réservé le</th>
+                    <th>Position</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var reservation in Model.ActiveReservations.OrderBy(r => r.RequestedAt))
                 {
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Livre</th>
-                                    <th>Date de demande</th>
-                                    <th>Position</th>
-                                    <th>Statut</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var reservation in Model.ActiveReservations.OrderBy(r => r.RequestedAt))
-                                {
-                                    <tr>
-                                        <td>
-                                            <strong>@reservation.BookTitleSnapshot</strong>
-                                        </td>
-                                        <td>@reservation.RequestedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                                        <td>
-                                            <span class="badge bg-secondary">
-                                                Position @reservation.PositionInQueue
-                                            </span>
-                                        </td>
-                                        <td>
-                                            @if (reservation.Status == "READY_FOR_PICKUP")
-                                            {
-                                                <span class="badge bg-success">
-                                                    <i class="fas fa-check"></i> Prêt à retirer
-                                                </span>
-                                                @if (reservation.ExpiresAt.HasValue)
-                                                {
-                                                    <br />
-                                                    <small class="text-muted">
-                                                        Expire le @reservation.ExpiresAt.Value.ToString("dd/MM/yyyy HH:mm")
-                                                    </small>
-                                                }
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-warning">
-                                                    <i class="fas fa-clock"></i> En attente
-                                                </span>
-                                            }
-                                        </td>
-                                        <td>
-                                            <a asp-controller="Catalog" asp-action="Details" asp-route-id="@reservation.BookId" 
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-info-circle"></i> Détails
-                                            </a>
-                                            <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                    onclick="cancelReservation(@reservation.Id)">
-                                                <i class="fas fa-times"></i> Annuler
-                                            </button>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                <tr>
+                    <td data-label="Livre">
+                        <a asp-controller="Catalog" asp-action="Details" asp-route-id="@reservation.BookId"
+                           style="font-family:'Playfair Display',serif;font-weight:600;color:var(--bordeaux);font-size:1rem">
+                            @reservation.BookTitleSnapshot
+                        </a>
+                    </td>
+                    <td data-label="Réservé le">@reservation.RequestedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td data-label="Position">
+                        <span class="badge bg-secondary">Nº @reservation.PositionInQueue</span>
+                    </td>
+                    <td data-label="Statut">
+                        @if (reservation.Status == "READY_FOR_PICKUP")
+                        {
+                        <span class="badge bg-success">Prêt à retirer</span>
+                        @if (reservation.ExpiresAt.HasValue)
+                        {
+                        <br><small class="text-ink-muted">Expire le @reservation.ExpiresAt.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                        }
+                        }
+                        else
+                        {
+                        <span class="badge bg-warning">En attente</span>
+                        }
+                    </td>
+                    <td data-label="Actions">
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="cancelReservation(@reservation.Id)">
+                            <i class="fas fa-times me-1"></i>Annuler
+                        </button>
+                    </td>
+                </tr>
                 }
-                else
-                {
-                    <div class="alert alert-info text-center">
-                        <i class="fas fa-info-circle fa-2x mb-3"></i>
-                        <p class="mb-0">Vous n'avez aucune réservation active</p>
-                    </div>
-                }
-            </div>
+                </tbody>
+            </table>
         </div>
+        }
+        else
+        {
+        <div class="text-center py-4 px-3">
+            <p class="mb-0" style="color:var(--ink-muted);font-style:italic">Aucune réservation active</p>
+        </div>
+        }
     </div>
 </div>
 
-<!-- Informations du compte -->
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-user-circle"></i> Informations du compte
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Nom d'utilisateur :</strong> @Model.User.Username</p>
-                        <p><strong>Email :</strong> @Model.User.Email</p>
-                        <p><strong>Téléphone :</strong> @(Model.User.PhoneNumber ?? "Non renseigné")</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Date d'inscription :</strong> @Model.User.RegistrationDate.ToString("dd/MM/yyyy")</p>
-                        <p><strong>Statut :</strong> 
-                            @if (Model.User.IsActive)
-                            {
-                                <span class="badge bg-success">Actif</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger">Inactif</span>
-                            }
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal de confirmation -->
+<!-- Modals -->
 <div class="modal fade" id="confirmModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirmation</h5>
+                <h5 class="modal-title" id="confirmModalTitle">Confirmation</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                Êtes-vous sûr de vouloir annuler cette réservation ?
-            </div>
+            <div class="modal-body" id="confirmModalBody">Êtes-vous sûr ?</div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non</button>
-                <button type="button" class="btn btn-danger" id="confirmCancelBtn">Oui, annuler</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="confirmBtn">Confirmer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="messageModalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="messageModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script>
-        const userId = '@Model.User.Id';
-        let reservationToCancel = null;
-        
-        function cancelReservation(reservationId) {
-            reservationToCancel = reservationId;
-            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-            modal.show();
+<script>
+    const userId = '@userId';
+    let pendingAction = null;
+
+    function showConfirm(title, body, action) {
+        document.getElementById('confirmModalTitle').textContent = title;
+        document.getElementById('confirmModalBody').textContent = body;
+        pendingAction = action;
+        new bootstrap.Modal(document.getElementById('confirmModal')).show();
+    }
+
+    document.getElementById('confirmBtn').addEventListener('click', function () {
+        if (pendingAction) {
+            bootstrap.Modal.getInstance(document.getElementById('confirmModal'))?.hide();
+            pendingAction();
+            pendingAction = null;
         }
-        
-        document.getElementById('confirmCancelBtn').addEventListener('click', function() {
-            if (!reservationToCancel) return;
-            
-            fetch(`/api/reservations/${reservationToCancel}?userId=${userId}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert('Erreur : ' + data.message);
-                }
-            })
-            .catch(error => {
-                alert('Une erreur est survenue lors de l\'annulation');
-            });
-            
-            bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
-        });
-    </script>
+    });
+
+    function showMessage(title, message, type) {
+        document.getElementById('messageModalTitle').textContent = title;
+        document.getElementById('messageModalBody').innerHTML =
+            `<div class="alert alert-${type} mb-0">${message}</div>`;
+        new bootstrap.Modal(document.getElementById('messageModal')).show();
+    }
+
+    // ── Renouvellement ──────────────────────────────────────────────────────
+    function renewLoan(loanId) {
+        showConfirm(
+            'Renouveler l\'emprunt',
+            'Voulez-vous renouveler cet emprunt de 7 jours supplémentaires ?',
+            () => {
+                fetch(`/api/loans/${loanId}/renew?userId=${userId}`, { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        showMessage(
+                            data.success ? 'Renouvellement effectué' : 'Erreur',
+                            data.message,
+                            data.success ? 'success' : 'danger'
+                        );
+                        if (data.success) setTimeout(() => location.reload(), 1800);
+                    })
+                    .catch(() => showMessage('Erreur', 'Une erreur est survenue', 'danger'));
+            }
+        );
+    }
+
+    // ── Annulation réservation ──────────────────────────────────────────────
+    function cancelReservation(reservationId) {
+        showConfirm(
+            'Annuler la réservation',
+            'Êtes-vous sûr de vouloir annuler cette réservation ?',
+            () => {
+                fetch(`/api/reservations/${reservationId}?userId=${userId}`, { method: 'DELETE' })
+                    .then(r => r.json())
+                    .then(data => {
+                        showMessage(
+                            data.success ? 'Réservation annulée' : 'Erreur',
+                            data.message,
+                            data.success ? 'success' : 'danger'
+                        );
+                        if (data.success) setTimeout(() => location.reload(), 1800);
+                    })
+                    .catch(() => showMessage('Erreur', 'Une erreur est survenue', 'danger'));
+            }
+        );
+    }
+</script>
 }

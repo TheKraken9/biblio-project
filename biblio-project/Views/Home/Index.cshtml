@@ -2,89 +2,146 @@
     ViewData["Title"] = "Accueil";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Bienvenue à la Bibliothèque</h1>
-    <p class="lead">Découvrez notre collection de livres et empruntez vos favoris</p>
-</div>
-
-<div class="row mt-5">
-    <div class="col-md-4 mb-4">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-book fa-3x text-primary mb-3"></i>
-                <h5 class="card-title">Catalogue</h5>
-                <p class="card-text">Explorez notre vaste collection de livres dans tous les genres</p>
-                <a asp-controller="Catalog" asp-action="Index" class="btn btn-primary">
-                    Parcourir le catalogue
-                </a>
+<!-- Hero -->
+<div class="hero-section">
+    <div class="container position-relative">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <h1 class="mb-3 fade-in-up">
+                    <span>Bienvenue à la</span>
+                    Bibliothèque
+                </h1>
+                <p class="lead mb-4 fade-in-up">
+                    Découvrez notre collection, empruntez vos favoris et gérez vos réservations en toute simplicité.
+                </p>
+                <div class="d-flex gap-3 flex-wrap fade-in-up">
+                    <a asp-controller="Catalog" asp-action="Index" class="btn btn-primary btn-lg">
+                        <i class="fas fa-book me-2"></i>Parcourir le catalogue
+                    </a>
+                    @if (!(User.Identity?.IsAuthenticated ?? false))
+                    {
+                        <a asp-controller="Account" asp-action="Register" class="btn btn-outline-secondary btn-lg" style="color:var(--ivory);border-color:rgba(248,244,238,.4)">
+                            <i class="fas fa-user-plus me-2"></i>Créer un compte
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="UserDashboard" asp-action="Index" class="btn btn-outline-secondary btn-lg" style="color:var(--ivory);border-color:rgba(248,244,238,.4)">
+                            <i class="fas fa-tachometer-alt me-2"></i>Mon espace
+                        </a>
+                    }
+                </div>
             </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-search fa-3x text-success mb-3"></i>
-                <h5 class="card-title">Recherche Avancée</h5>
-                <p class="card-text">Trouvez rapidement le livre que vous cherchez</p>
-                <a asp-controller="Catalog" asp-action="Index" class="btn btn-success">
-                    Rechercher
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-user fa-3x text-info mb-3"></i>
-                <h5 class="card-title">Mon Espace</h5>
-                <p class="card-text">Gérez vos emprunts et réservations</p>
-                <a asp-controller="UserDashboard" asp-action="Index" class="btn btn-info">
-                    Accéder à mon espace
-                </a>
+            <div class="col-lg-5 d-none d-lg-flex justify-content-end">
+                <div style="font-size:9rem;opacity:.08;line-height:1;font-family:'Playfair Display',serif;font-style:italic;color:var(--ivory)">
+                    &ldquo;
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-5">
-    <div class="col-12">
-        <h2 class="text-center mb-4">Comment ça marche ?</h2>
-    </div>
-    <div class="col-md-3 text-center mb-4">
-        <div class="step-circle mx-auto mb-3">1</div>
-        <h5>Recherchez</h5>
-        <p>Parcourez notre catalogue ou utilisez la recherche</p>
-    </div>
-    <div class="col-md-3 text-center mb-4">
-        <div class="step-circle mx-auto mb-3">2</div>
-        <h5>Sélectionnez</h5>
-        <p>Choisissez le livre qui vous intéresse</p>
-    </div>
-    <div class="col-md-3 text-center mb-4">
-        <div class="step-circle mx-auto mb-3">3</div>
-        <h5>Empruntez</h5>
-        <p>Empruntez ou réservez votre livre</p>
-    </div>
-    <div class="col-md-3 text-center mb-4">
-        <div class="step-circle mx-auto mb-3">4</div>
-        <h5>Profitez</h5>
-        <p>Lisez et retournez avant la date d'échéance</p>
-    </div>
-</div>
+<!-- Feature Cards -->
+<div class="container">
+    <div class="row g-4 mb-5">
+        <div class="col-md-4 fade-in-up">
+            <div class="feature-card">
+                <div class="icon-wrap">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <h5 class="section-title" style="font-size:1.15rem;text-align:left">Catalogue</h5>
+                <p class="text-ink-muted mb-3" style="font-size:.93rem">
+                    Explorez notre collection complète — romans, sciences, histoire et bien d'autres genres.
+                </p>
+                <a asp-controller="Catalog" asp-action="Index" class="btn btn-primary btn-sm">
+                    Parcourir <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
 
-<style>
-    .step-circle {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background-color: #007bff;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        font-weight: bold;
+        <div class="col-md-4 fade-in-up">
+            <div class="feature-card">
+                <div class="icon-wrap" style="background:linear-gradient(135deg,var(--sage),#3b4233)">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h5 class="section-title" style="font-size:1.15rem;text-align:left">Recherche avancée</h5>
+                <p class="text-ink-muted mb-3" style="font-size:.93rem">
+                    Filtrez par titre, auteur, catégorie, année ou disponibilité pour trouver exactement ce qu'il vous faut.
+                </p>
+                <a asp-controller="Catalog" asp-action="Index" class="btn btn-success btn-sm">
+                    Rechercher <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-4 fade-in-up">
+            <div class="feature-card" style="border-top-color:var(--gold)">
+                <div class="icon-wrap" style="background:linear-gradient(135deg,var(--gold),#854d0e)">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h5 class="section-title" style="font-size:1.15rem;text-align:left;color:var(--gold)">Mon espace</h5>
+                <p class="text-ink-muted mb-3" style="font-size:.93rem">
+                    Consultez vos emprunts en cours, vos réservations et renouvelez vos livres facilement.
+                </p>
+                @if (User.Identity?.IsAuthenticated ?? false)
+                {
+                    <a asp-controller="UserDashboard" asp-action="Index" class="btn btn-warning btn-sm" style="color:white">
+                        Mon espace <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-warning btn-sm" style="color:white">
+                        Se connecter <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="text-center mb-3">
+        <h2 class="section-title d-inline-block" style="text-align:center">Comment ça marche ?</h2>
+    </div>
+    <p class="text-center text-ink-muted mb-4" style="font-size:.95rem;max-width:520px;margin-inline:auto">
+        Emprunter un livre ne prend que quelques instants, depuis votre compte en ligne.
+    </p>
+    <div class="row g-3 mb-5">
+        @{
+            var steps = new[] {
+                ("1", "fas fa-search", "Recherchez", "Parcourez le catalogue ou utilisez la recherche par mot-clé."),
+                ("2", "fas fa-info-circle", "Sélectionnez", "Consultez les détails du livre et vérifiez la disponibilité."),
+                ("3", "fas fa-book-reader", "Empruntez", "Empruntez directement ou réservez si le livre est indisponible."),
+                ("4", "fas fa-smile", "Profitez", "Lisez et retournez avant la date d'échéance pour éviter les retards.")
+            };
+        }
+        @foreach (var (num, icon, title, desc) in steps)
+        {
+            <div class="col-md-3 col-6 text-center fade-in-up">
+                <div class="step-circle mb-3">@num</div>
+                <h6 style="font-family:'Playfair Display',serif;font-weight:700;margin-bottom:.4rem">@title</h6>
+                <p class="text-ink-muted" style="font-size:.85rem;line-height:1.5">@desc</p>
+            </div>
+        }
+    </div>
+
+    <!-- CTA Banner -->
+    @if (!(User.Identity?.IsAuthenticated ?? false))
+    {
+        <div class="card mb-5" style="background:linear-gradient(135deg,var(--ink),#2D2926);border:none;color:var(--ivory);overflow:hidden">
+            <div class="card-body p-4 p-md-5 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h4 style="font-family:'Playfair Display',serif;color:var(--ivory);margin-bottom:.4rem;font-style:italic">
+                        Pas encore de compte ?
+                    </h4>
+                    <p style="color:rgba(248,244,238,.7);margin-bottom:0;font-size:.95rem">
+                        Créez votre compte gratuitement pour accéder à tous les services de la bibliothèque.
+                    </p>
+                </div>
+                <a asp-controller="Account" asp-action="Register" class="btn btn-primary btn-lg flex-shrink-0">
+                    <i class="fas fa-user-plus me-2"></i>Créer un compte
+                </a>
+            </div>
+        </div>
     }
-</style>
+</div>
