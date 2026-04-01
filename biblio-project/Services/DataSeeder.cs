@@ -336,7 +336,7 @@ public class DataSeeder : IDataSeeder
         var insertQuery = @"
             INSERT INTO BookCopies (BookId, Barcode, ShelfLocation, AcquisitionDate, Status,
                                    BookTitleSnapshot, CategoryNamesSnapshot, AuthorNamesSnapshot)
-            VALUES (@BookId, @Barcode, @ShelfLocation, GETDATE(), 'AVAILABLE',
+            VALUES (@BookId, @Barcode, @ShelfLocation, GETDATE(), 'Disponible',
                     @BookTitleSnapshot, @CategoryNamesSnapshot, @AuthorNamesSnapshot)";
 
         var shelfLocations = new[] { "A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2" };

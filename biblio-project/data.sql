@@ -220,7 +220,7 @@ CREATE TABLE dbo.BookCopy (
                               ShelfLocation NVARCHAR(100) NOT NULL,
                               Condition NVARCHAR(50) NOT NULL DEFAULT 'Good',
                               AcquisitionDate DATETIME NOT NULL DEFAULT GETDATE(),
-                              Status NVARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
+                              Status NVARCHAR(20) NOT NULL DEFAULT 'Disponible',
                               IsReferenceOnly BIT NOT NULL DEFAULT 0,
                               BookTitleSnapshot NVARCHAR(255) NULL,
                               MainCategorySnapshot NVARCHAR(100) NULL,
@@ -229,7 +229,7 @@ CREATE TABLE dbo.BookCopy (
                               UpdatedAt DATETIME NOT NULL DEFAULT GETDATE(),
                               CONSTRAINT FK_BookCopy_Book FOREIGN KEY (BookId)
                                   REFERENCES dbo.Book(Id) ON DELETE CASCADE,
-                              CONSTRAINT CK_BookCopy_Status CHECK (Status IN ('AVAILABLE', 'ON_LOAN', 'RESERVED', 'LOST', 'DAMAGED', 'MAINTENANCE'))
+                              CONSTRAINT CK_BookCopy_Status CHECK (Status IN ('Disponible', 'ON_LOAN', 'RESERVED', 'LOST', 'DAMAGED', 'MAINTENANCE'))
 );
 GO
 

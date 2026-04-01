@@ -8,6 +8,6 @@ public class BookCopy
     public string ShelfLocation { get; set; } = string.Empty;
     public string Condition { get; set; } = "Good";
     public DateTime AcquisitionDate { get; set; }
-    public string Status { get; set; } = "AVAILABLE";
+    public string Status { get; set; } = "Disponible";
     public bool IsReferenceOnly { get; set; }
 }

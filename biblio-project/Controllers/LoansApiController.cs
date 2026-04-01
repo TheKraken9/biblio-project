@@ -252,7 +252,7 @@ public class LoansApiController : ControllerBase
         var query = @"
             SELECT TOP 1 Id, BookId, Barcode, ShelfLocation, Status
             FROM BookCopies
-            WHERE BookId = @BookId AND Status = 'AVAILABLE'
+            WHERE BookId = @BookId AND Status = 'Disponible'
             ORDER BY AcquisitionDate";
 
         using var command = new SqlCommand(query, connection);
