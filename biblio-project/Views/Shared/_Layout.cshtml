@@ -3,39 +3,43 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Biblio-Tiako</title>
+    <title>@ViewData["Title"] - Bibliothèque</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
+        <nav class="navbar navbar-expand-md">
+            <div class="container">
                 <a class="navbar-brand" asp-controller="Home" asp-action="Index">
-                    <i class="fas fa-book-open"></i> Biblio-Tiako
+                    <i class="fas fa-book-open"></i> Bibliothèque
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navMain" aria-controls="navMain"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <div class="collapse navbar-collapse" id="navMain">
+                    <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">
-                                <i class="fas fa-home"></i> Accueil
+                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
+                               asp-controller="Home" asp-action="Index">
+                                <i class="fas fa-home me-1"></i> Accueil
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Catalog" asp-action="Index">
-                                <i class="fas fa-book"></i> Catalogue
+                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Catalog" ? "active" : "")"
+                               asp-controller="Catalog" asp-action="Index">
+                                <i class="fas fa-book me-1"></i> Catalogue
                             </a>
                         </li>
                         @if (User.Identity?.IsAuthenticated ?? false)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="UserDashboard" asp-action="Index">
-                                    <i class="fas fa-user"></i> Mon Espace
+                                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "UserDashboard" ? "active" : "")"
+                                   asp-controller="UserDashboard" asp-action="Index">
+                                    <i class="fas fa-columns me-1"></i> Mon espace
                                 </a>
                             </li>
                         }
@@ -44,25 +48,26 @@
                         @if (User.Identity?.IsAuthenticated ?? false)
                         {
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" id="navbarDropdown" role="button" 
-                                   data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-user-circle"></i> @User.Identity.Name
+                                <a class="nav-link dropdown-toggle" href="#" id="navUser"
+                                   role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-user-circle me-1"></i>
+                                    @User.Identity.Name
                                 </a>
-                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navUser">
                                     <li>
                                         <a class="dropdown-item" asp-controller="UserDashboard" asp-action="Index">
-                                            <i class="fas fa-tachometer-alt"></i> Tableau de bord
+                                            <i class="fas fa-tachometer-alt me-2"></i>Tableau de bord
                                         </a>
                                     </li>
                                     <li>
                                         <a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword">
-                                            <i class="fas fa-key"></i> Changer le mot de passe
+                                            <i class="fas fa-key me-2"></i>Changer le mot de passe
                                         </a>
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <a class="dropdown-item" asp-controller="Account" asp-action="Logout">
-                                            <i class="fas fa-sign-out-alt"></i> Déconnexion
+                                            <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
                                         </a>
                                     </li>
                                 </ul>
@@ -71,13 +76,13 @@
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">
-                                    <i class="fas fa-sign-in-alt"></i> Connexion
+                                <a class="nav-link" asp-controller="Account" asp-action="Login">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Connexion
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">
-                                    <i class="fas fa-user-plus"></i> Inscription
+                                <a class="nav-link" asp-controller="Account" asp-action="Register">
+                                    <i class="fas fa-user-plus me-1"></i>Inscription
                                 </a>
                             </li>
                         }
@@ -86,17 +91,37 @@
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+
+    <div class="container py-4">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        <main role="main" class="pb-4">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - MBDS - ITUniversity
+    <footer class="footer border-top">
+        <div class="container d-flex align-items-center justify-content-between">
+            <span>
+                <i class="fas fa-book-open me-1" style="color:var(--bordeaux)"></i>
+                &copy; @DateTime.Now.Year — Système de Gestion de Bibliothèque
+            </span>
+            <span style="font-size:.8rem;opacity:.5">ADO.NET · SQL Server · ASP.NET Core MVC</span>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

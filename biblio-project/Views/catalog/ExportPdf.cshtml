@@ -1,0 +1,290 @@
+@model biblio_project.Models.CatalogViewModel
+@removeTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = null; // Pas de layout — page autonome pour impression
+    var dateExport = DateTime.Now.ToString("dd/MM/yyyy à HH:mm");
+    var filtreDesc = new List<string>();
+    if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
+        filtreDesc.Add($"Recherche : « {Model.SearchQuery} »");
+    if (Model.CategoryId.HasValue)
+    {
+        var cat = Model.Categories.FirstOrDefault(c => c.Id == Model.CategoryId.Value);
+        if (cat != null) filtreDesc.Add($"Catégorie : {cat.Name}");
+    }
+    if (Model.AvailableOnly == true)
+        filtreDesc.Add("Disponibles uniquement");
+}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Export catalogue — Bibliothèque</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Serif+4:wght@300;400;600&display=swap" />
+    <style>
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Source Serif 4', Georgia, serif;
+            font-size: 11pt;
+            color: #1C1917;
+            background: white;
+            padding: 0;
+        }
+
+        /* ── Header ── */
+        .pdf-header {
+            background: #1C1917;
+            color: #F8F4EE;
+            padding: 24px 32px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 4px solid #7C2D12;
+        }
+        .pdf-header h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 22pt;
+            font-style: italic;
+            color: #F8F4EE;
+            letter-spacing: -0.01em;
+        }
+        .pdf-header h1 small {
+            display: block;
+            font-style: normal;
+            font-size: 9pt;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: rgba(248,244,238,.6);
+            margin-bottom: 4px;
+        }
+        .pdf-header .meta {
+            text-align: right;
+            font-size: 8.5pt;
+            color: rgba(248,244,238,.65);
+            line-height: 1.5;
+        }
+
+        /* ── Filter bar ── */
+        .filter-bar {
+            background: #F8F4EE;
+            border-bottom: 1px solid #EDE7DC;
+            padding: 10px 32px;
+            font-size: 9pt;
+            color: #78716C;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .filter-bar strong { color: #1C1917; }
+
+        /* ── Print controls (masqués à l'impression) ── */
+        .print-controls {
+            background: #FEF9C3;
+            border-bottom: 2px solid #FDE047;
+            padding: 12px 32px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .print-controls p { font-size: 9.5pt; color: #713F12; margin: 0; }
+        .btn-print {
+            background: #7C2D12;
+            color: white;
+            border: none;
+            padding: 7px 18px;
+            font-family: 'Source Serif 4', serif;
+            font-size: 10pt;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-back {
+            background: transparent;
+            color: #44403C;
+            border: 1.5px solid #D6CFC7;
+            padding: 7px 18px;
+            font-family: 'Source Serif 4', serif;
+            font-size: 10pt;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ── Table ── */
+        .content { padding: 24px 32px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9.5pt;
+        }
+        thead tr {
+            background: #1C1917;
+            color: #F8F4EE;
+        }
+        thead th {
+            font-family: 'Source Serif 4', serif;
+            font-size: 7.5pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 9px 10px;
+            text-align: left;
+        }
+        tbody tr { border-bottom: 1px solid #EDE7DC; }
+        tbody tr:nth-child(even) { background: #FFFBF5; }
+        tbody tr:hover { background: #FEF9E7; }
+        tbody td { padding: 8px 10px; vertical-align: top; line-height: 1.4; }
+        .title-cell { font-weight: 600; font-family: 'Playfair Display', serif; font-size: 10pt; }
+        .subtitle-cell { font-size: 8.5pt; color: #78716C; font-style: italic; }
+        .avail-yes { color: #15532A; font-weight: 600; }
+        .avail-no  { color: #7C2D12; font-weight: 600; }
+        .badge-cat {
+            background: #7C2D12;
+            color: white;
+            font-size: 7pt;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        /* ── Footer ── */
+        .pdf-footer {
+            margin-top: 24px;
+            padding: 12px 32px;
+            border-top: 2px solid #EDE7DC;
+            display: flex;
+            justify-content: space-between;
+            font-size: 8pt;
+            color: #78716C;
+        }
+
+        /* ── PRINT ── */
+        @@media print {
+            .print-controls { display: none !important; }
+            .filter-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .pdf-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            thead tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            tbody tr:nth-child(even) { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            thead { display: table-header-group; }
+            tbody tr { page-break-inside: avoid; }
+            @@page { margin: 1.2cm; size: A4 landscape; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barre de contrôle (masquée à l'impression) -->
+    <div class="print-controls">
+        <a href="javascript:history.back()" class="btn-back">← Retour</a>
+        <p>📄 Ce document est prêt à être imprimé ou sauvegardé en PDF via le navigateur.</p>
+        <button class="btn-print" onclick="window.print()">🖨 Imprimer / Enregistrer en PDF</button>
+    </div>
+
+    <!-- En-tête du document -->
+    <div class="pdf-header">
+        <h1>
+            <small>Bibliothèque — Export catalogue</small>
+            @Model.TotalBooks livre(s) référencé(s)
+        </h1>
+        <div class="meta">
+            Exporté le @dateExport<br>
+            @if (filtreDesc.Any())
+            {
+                @:Filtres appliqués : @string.Join(" · ", filtreDesc)
+            }
+            else
+            {
+                @:Aucun filtre appliqué — catalogue complet
+            }
+        </div>
+    </div>
+
+    <!-- Résumé des filtres -->
+    <div class="filter-bar">
+        <span>
+            <strong>@Model.TotalBooks résultat(s)</strong>
+            @if (filtreDesc.Any())
+            {
+                @: — @string.Join(" · ", filtreDesc)
+            }
+        </span>
+        <span style="font-size:8pt;color:#A8A09A">Système de Gestion de Bibliothèque</span>
+    </div>
+
+    <!-- Tableau principal -->
+    <div class="content">
+        @if (Model.Books.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:30%">Titre</th>
+                        <th style="width:20%">Auteur(s)</th>
+                        <th style="width:13%">Catégorie</th>
+                        <th style="width:8%;text-align:center">Année</th>
+                        <th style="width:14%">Éditeur</th>
+                        <th style="width:8%;text-align:center">Dispo.</th>
+                        <th style="width:7%;text-align:center">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var book in Model.Books)
+                    {
+                        <tr>
+                            <td>
+                                <div class="title-cell">@book.Title</div>
+                                @if (!string.IsNullOrEmpty(book.Subtitle))
+                                {
+                                    <div class="subtitle-cell">@book.Subtitle</div>
+                                }
+                            </td>
+                            <td>@(book.AuthorNamesText ?? "—")</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(book.MainCategoryName))
+                                {
+                                    <span class="badge-cat">@book.MainCategoryName</span>
+                                }
+                                else { @:— }
+                            </td>
+                            <td style="text-align:center">@(book.PublicationYear?.ToString() ?? "—")</td>
+                            <td>@(book.PublisherName ?? "—")</td>
+                            <td style="text-align:center">
+                                @if (book.AvailableCopiesCount > 0)
+                                {
+                                    <span class="avail-yes">✓ @book.AvailableCopiesCount</span>
+                                }
+                                else
+                                {
+                                    <span class="avail-no">✗ 0</span>
+                                }
+                            </td>
+                            <td style="text-align:center">@book.TotalCopiesCount</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p style="text-align:center;color:#78716C;padding:2rem 0;font-style:italic">
+                Aucun livre trouvé avec les filtres appliqués.
+            </p>
+        }
+
+        <!-- Pied de tableau -->
+        <div class="pdf-footer">
+            <span>Bibliothèque — Système de Gestion</span>
+            <span>Total : @Model.TotalBooks livre(s) · Disponibles : @Model.Books.Count(b => b.AvailableCopiesCount > 0) · Indisponibles : @Model.Books.Count(b => b.AvailableCopiesCount == 0)</span>
+            <span>Page générée le @dateExport</span>
+        </div>
+    </div>
+
+</body>
+</html>
