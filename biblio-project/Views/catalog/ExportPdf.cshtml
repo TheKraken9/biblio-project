@@ -247,9 +247,9 @@
                             </td>
                             <td>@(book.AuthorNamesText ?? "—")</td>
                             <td>
-                                @if (!string.IsNullOrEmpty(book.MainCategoryName))
+                                @if (!string.IsNullOrEmpty(book.CategoryNamesText))
                                 {
-                                    <span class="badge-cat">@book.MainCategoryName</span>
+                                    <span class="badge-cat">@book.CategoryNamesText</span>
                                 }
                                 else
                                 {

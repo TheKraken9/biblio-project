@@ -12,8 +12,6 @@ public class Book
     public string? CategoryNamesText { get; set; }
     public int AvailableCopiesCount { get; set; }
     public int TotalCopiesCount { get; set; }
-    public int? MainCategoryId { get; set; }
-    public string? MainCategoryName { get; set; }
     public int? PublisherId { get; set; }
     public string? PublisherName { get; set; }
 }

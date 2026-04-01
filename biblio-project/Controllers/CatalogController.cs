@@ -197,9 +197,8 @@ public class CatalogController : Controller
             SELECT b.Id, b.Title, b.Subtitle, b.Summary, b.PublicationYear,
                    b.CoverImageUrl, b.AuthorNamesText, b.CategoryNamesText,
                    b.AvailableCopiesCount, b.TotalCopiesCount,
-                   c.Name as MainCategoryName, p.Name as PublisherName
+                   p.Name as PublisherName
             FROM Books b
-            LEFT JOIN Category c ON b.MainCategoryId = c.Id
             LEFT JOIN Publisher p ON b.PublisherId = p.Id
             {whereCondition}
             ORDER BY b.Title
@@ -226,8 +225,7 @@ public class CatalogController : Controller
                 CategoryNamesText = reader.IsDBNull(7) ? null : reader.GetString(7),
                 AvailableCopiesCount = reader.GetInt32(8),
                 TotalCopiesCount = reader.GetInt32(9),
-                MainCategoryName = reader.IsDBNull(10) ? null : reader.GetString(10),
-                PublisherName = reader.IsDBNull(11) ? null : reader.GetString(11)
+                PublisherName = reader.IsDBNull(10) ? null : reader.GetString(10)
             });
         }
 
