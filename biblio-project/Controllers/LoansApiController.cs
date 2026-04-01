@@ -62,10 +62,10 @@ public class LoansApiController : ControllerBase
 
                 var insertLoanQuery = @"
                     INSERT INTO Loans (BookCopyId, BorrowerId, LoanDate, DueDate, Status, BookId,
-                                      BookTitleSnapshot, BorrowerNameSnapshot, BorrowerEmailSnapshot)
+                                      BookTitleSnapshot, BorrowerNameSnapshot, BorrowerEmailSnapshot, CreatedAt, UpdatedAt, RenewalCount)
                     OUTPUT INSERTED.Id
-                    VALUES (@BookCopyId, @BorrowerId, @LoanDate, @DueDate, 'ONGOING', @BookId,
-                            @BookTitle, @BorrowerName, @BorrowerEmail)";
+                    VALUES (@BookCopyId, @BorrowerId, @LoanDate, @DueDate, 'reserved', @BookId,
+                            @BookTitle, @BorrowerName, @BorrowerEmail, @CreatedAt, @UpdatedAt, 0)";
 
                 int loanId;
                 using (var command = new SqlCommand(insertLoanQuery, connection, transaction))
@@ -78,6 +78,8 @@ public class LoansApiController : ControllerBase
                     command.Parameters.AddWithValue("@BookTitle", bookInfo.Title);
                     command.Parameters.AddWithValue("@BorrowerName", userInfo.FullName);
                     command.Parameters.AddWithValue("@BorrowerEmail", userInfo.Email);
+                    command.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
+                    command.Parameters.AddWithValue("@UpdatedAt", DateTime.Now);
                     loanId = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
                 }
 
@@ -105,7 +107,7 @@ public class LoansApiController : ControllerBase
                     BorrowerId = request.UserId,
                     LoanDate = loanDate,
                     DueDate = dueDate,
-                    Status = "ONGOING",
+                    Status = "created",
                     BookId = request.BookId,
                     BookTitleSnapshot = bookInfo.Title
                 }, "Livre emprunté avec succès"));
@@ -139,7 +141,7 @@ public class LoansApiController : ControllerBase
             if (loan.BorrowerId != userId)
                 return Forbid();
 
-            if (loan.Status != "ONGOING")
+            if (loan.Status != "onLoan")
                 return BadRequest(ApiResponse<Loan>.Fail("Cet emprunt n'est plus actif"));
 
             if (loan.RenewalCount >= _maxRenewals)
@@ -198,7 +200,7 @@ public class LoansApiController : ControllerBase
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var statusFilter = activeOnly ? "AND Status = 'ONGOING'" : "";
+            var statusFilter = activeOnly ? "AND Status = 'onLoan'" : "";
             var query = $@"
                 SELECT Id, BookCopyId, BorrowerId, LoanDate, DueDate, ReturnDate,
                        Status, RenewalCount, BookId, BookTitleSnapshot
@@ -287,7 +289,7 @@ public class LoansApiController : ControllerBase
 
     private async Task<int> GetUserActiveLoansCountAsync(SqlConnection connection, int userId)
     {
-        var query = "SELECT COUNT(*) FROM Loans WHERE BorrowerId = @UserId AND Status = 'ONGOING'";
+        var query = "SELECT COUNT(*) FROM Loans WHERE BorrowerId = @UserId AND Status = 'onLoan'";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
         return (int)(await command.ExecuteScalarAsync() ?? 0);
@@ -324,7 +326,7 @@ public class LoansApiController : ControllerBase
     {
         var query = @"
             SELECT COUNT(*) FROM Loans
-            WHERE BorrowerId = @UserId AND BookId = @BookId AND Status = 'ONGOING'";
+            WHERE BorrowerId = @UserId AND BookId = @BookId AND Status = 'onLoan'";
 
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
@@ -373,7 +375,7 @@ public class LoansApiController : ControllerBase
             BEGIN
                 UPDATE BookStatistics
                 SET TotalLoansCount = TotalLoansCount + 1,
-                    CurrentActiveLoansCount = (SELECT COUNT(*) FROM Loans WHERE BookId = @BookId AND Status = 'ONGOING'),
+                    CurrentActiveLoansCount = (SELECT COUNT(*) FROM Loans WHERE BookId = @BookId AND Status = 'onLoan'),
                     LastLoanDate = GETDATE(),
                     UpdatedAt = GETDATE()
                 WHERE BookId = @BookId

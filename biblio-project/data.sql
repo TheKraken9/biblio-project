@@ -257,7 +257,7 @@ CREATE TABLE dbo.Loan (
                           LoanDate DATETIME NOT NULL DEFAULT GETDATE(),
                           DueDate DATETIME NOT NULL,
                           ReturnDate DATETIME NULL,
-                          Status NVARCHAR(20) NOT NULL DEFAULT 'ONGOING',
+                          Status NVARCHAR(20) NOT NULL DEFAULT 'OnLoan',
                           RenewalCount INT NOT NULL DEFAULT 0,
                           LastReminderDate DATETIME NULL,
                           BookId INT NOT NULL,
@@ -272,7 +272,7 @@ CREATE TABLE dbo.Loan (
                               REFERENCES dbo.LibraryUser(Id),
                           CONSTRAINT FK_Loan_Book FOREIGN KEY (BookId)
                               REFERENCES dbo.Book(Id),
-                          CONSTRAINT CK_Loan_Status CHECK (Status IN ('ONGOING', 'RETURNED', 'LATE', 'LOST'))
+                          CONSTRAINT CK_Loan_Status CHECK (Status IN ('OnLoan', 'RETURNED', 'LATE', 'LOST'))
 );
 GO
 
