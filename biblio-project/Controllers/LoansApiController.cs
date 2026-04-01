@@ -78,7 +78,7 @@ public class LoansApiController : ControllerBase
                     command.Parameters.AddWithValue("@BookTitle", bookInfo.Title);
                     command.Parameters.AddWithValue("@BorrowerName", userInfo.FullName);
                     command.Parameters.AddWithValue("@BorrowerEmail", userInfo.Email);
-                    loanId = (int)await command.ExecuteScalarAsync();
+                    loanId = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
                 }
 
                 var updateCopyQuery = "UPDATE BookCopy SET Status = 'ON_LOAN' WHERE Id = @CopyId";
@@ -130,7 +130,7 @@ public class LoansApiController : ControllerBase
     /// en attente par un autre utilisateur sur le même livre.
     /// </summary>
     [HttpPost("{loanId}/renew")]
-    public async Task<ActionResult<ApiResponse<Loan>>> RenewLoan(int loanId, [FromQuery] Guid userId)
+    public async Task<ActionResult<ApiResponse<Loan>>> RenewLoan(int loanId, [FromQuery] int userId)
     {
         try
         {
@@ -200,7 +200,7 @@ public class LoansApiController : ControllerBase
 
     // ── Emprunts d'un utilisateur ─────────────────────────────────────────────
     [HttpGet("user/{userId}")]
-    public async Task<ActionResult<ApiResponse<List<Loan>>>> GetUserLoans(Guid userId, [FromQuery] bool activeOnly = true)
+    public async Task<ActionResult<ApiResponse<List<Loan>>>> GetUserLoans(int userId, [FromQuery] bool activeOnly = true)
     {
         try
         {
@@ -226,7 +226,7 @@ public class LoansApiController : ControllerBase
                 {
                     Id = reader.GetInt32(0),
                     BookCopyId = reader.GetInt32(1),
-                    BorrowerId = reader.GetGuid(2),
+                    BorrowerId = reader.GetInt32(2),
                     LoanDate = reader.GetDateTime(3),
                     DueDate = reader.GetDateTime(4),
                     ReturnDate = reader.IsDBNull(5) ? null : reader.GetDateTime(5),
@@ -264,7 +264,7 @@ public class LoansApiController : ControllerBase
             {
                 Id = reader.GetInt32(0),
                 BookCopyId = reader.GetInt32(1),
-                BorrowerId = reader.GetGuid(2),
+                BorrowerId = reader.GetInt32(2),
                 LoanDate = reader.GetDateTime(3),
                 DueDate = reader.GetDateTime(4),
                 ReturnDate = reader.IsDBNull(5) ? null : reader.GetDateTime(5),
@@ -283,23 +283,23 @@ public class LoansApiController : ControllerBase
         var query = "SELECT COUNT(*) FROM Reservation WHERE BookId = @BookId AND Status = 'PENDING'";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@BookId", bookId);
-        return (int)await command.ExecuteScalarAsync();
+        return (int)(await command.ExecuteScalarAsync() ?? 0);
     }
 
-    private async Task<bool> UserExistsAsync(SqlConnection connection, Guid userId)
+    private async Task<bool> UserExistsAsync(SqlConnection connection, int userId)
     {
         var query = "SELECT COUNT(*) FROM LibraryUser WHERE Id = @UserId AND IsActive = 1";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
-        return (int)await command.ExecuteScalarAsync() > 0;
+        return (int)(await command.ExecuteScalarAsync() ?? 0) > 0;
     }
 
-    private async Task<int> GetUserActiveLoansCountAsync(SqlConnection connection, Guid userId)
+    private async Task<int> GetUserActiveLoansCountAsync(SqlConnection connection, int userId)
     {
         var query = "SELECT COUNT(*) FROM Loan WHERE BorrowerId = @UserId AND Status = 'ONGOING'";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
-        return (int)await command.ExecuteScalarAsync();
+        return (int)(await command.ExecuteScalarAsync() ?? 0);
     }
 
     private async Task<BookCopy?> GetAvailableBookCopyAsync(SqlConnection connection, int bookId)
@@ -330,7 +330,7 @@ public class LoansApiController : ControllerBase
         return null;
     }
 
-    private async Task<bool> HasActiveLoanForBookAsync(SqlConnection connection, Guid userId, int bookId)
+    private async Task<bool> HasActiveLoanForBookAsync(SqlConnection connection, int userId, int bookId)
     {
         var query = @"
             SELECT COUNT(*) FROM Loan
@@ -339,7 +339,7 @@ public class LoansApiController : ControllerBase
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
         command.Parameters.AddWithValue("@BookId", bookId);
-        return (int)await command.ExecuteScalarAsync() > 0;
+        return (int)(await command.ExecuteScalarAsync() ?? 0) > 0;
     }
 
     private async Task<Book?> GetBookInfoAsync(SqlConnection connection, int bookId)
@@ -355,7 +355,7 @@ public class LoansApiController : ControllerBase
         return null;
     }
 
-    private async Task<LibraryUser?> GetUserInfoAsync(SqlConnection connection, Guid userId)
+    private async Task<LibraryUser?> GetUserInfoAsync(SqlConnection connection, int userId)
     {
         var query = "SELECT Id, FirstName, LastName, Email FROM LibraryUser WHERE Id = @UserId";
         using var command = new SqlCommand(query, connection);
@@ -366,7 +366,7 @@ public class LoansApiController : ControllerBase
         {
             return new LibraryUser
             {
-                Id = reader.GetGuid(0),
+                Id = reader.GetInt32(0),
                 FirstName = reader.GetString(1),
                 LastName = reader.GetString(2),
                 Email = reader.GetString(3)
@@ -403,5 +403,5 @@ public class LoansApiController : ControllerBase
 public class BorrowBookRequest
 {
     public int BookId { get; set; }
-    public Guid UserId { get; set; }
+    public int UserId { get; set; }
 }

@@ -251,7 +251,10 @@
                                 {
                                     <span class="badge-cat">@book.MainCategoryName</span>
                                 }
-                                else { @:— }
+                                else
+                                {
+                                    @:—
+                                }
                             </td>
                             <td style="text-align:center">@(book.PublicationYear?.ToString() ?? "—")</td>
                             <td>@(book.PublisherName ?? "—")</td>
