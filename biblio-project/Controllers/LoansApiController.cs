@@ -21,7 +21,7 @@ public class LoansApiController : ControllerBase
         _defaultLoanDurationDays = configuration.GetValue<int>("LibrarySettings:DefaultLoanDurationDays", 14);
         _maxConcurrentLoans = configuration.GetValue<int>("LibrarySettings:MaxConcurrentLoans", 5);
         _maxRenewals = configuration.GetValue<int>("LibrarySettings:MaxRenewals", 2);
-        _renewalExtensionDays = 7; // Extension accordée par renouvellement
+        _renewalExtensionDays = 7;
     }
 
     // ── Emprunter un livre ────────────────────────────────────────────────────
@@ -61,8 +61,8 @@ public class LoansApiController : ControllerBase
                 var dueDate = loanDate.AddDays(_defaultLoanDurationDays);
 
                 var insertLoanQuery = @"
-                    INSERT INTO Loan (BookCopyId, BorrowerId, LoanDate, DueDate, Status, BookId,
-                                     BookTitleSnapshot, BorrowerNameSnapshot, BorrowerEmailSnapshot)
+                    INSERT INTO Loans (BookCopyId, BorrowerId, LoanDate, DueDate, Status, BookId,
+                                      BookTitleSnapshot, BorrowerNameSnapshot, BorrowerEmailSnapshot)
                     OUTPUT INSERTED.Id
                     VALUES (@BookCopyId, @BorrowerId, @LoanDate, @DueDate, 'ONGOING', @BookId,
                             @BookTitle, @BorrowerName, @BorrowerEmail)";
@@ -81,15 +81,14 @@ public class LoansApiController : ControllerBase
                     loanId = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
                 }
 
-                var updateCopyQuery = "UPDATE BookCopy SET Status = 'ON_LOAN' WHERE Id = @CopyId";
+                var updateCopyQuery = "UPDATE BookCopies SET Status = 'ON_LOAN' WHERE Id = @CopyId";
                 using (var command = new SqlCommand(updateCopyQuery, connection, transaction))
                 {
                     command.Parameters.AddWithValue("@CopyId", availableCopy.Id);
                     await command.ExecuteNonQueryAsync();
                 }
 
-                var updateBookQuery = @"
-                    UPDATE Book SET AvailableCopiesCount = AvailableCopiesCount - 1 WHERE Id = @BookId";
+                var updateBookQuery = "UPDATE Books SET AvailableCopiesCount = AvailableCopiesCount - 1 WHERE Id = @BookId";
                 using (var command = new SqlCommand(updateBookQuery, connection, transaction))
                 {
                     command.Parameters.AddWithValue("@BookId", request.BookId);
@@ -124,11 +123,6 @@ public class LoansApiController : ControllerBase
     }
 
     // ── Renouveler un emprunt ─────────────────────────────────────────────────
-    /// <summary>
-    /// Fonctionnalité complexe : renouvellement avec contrôles métier multiples.
-    /// Vérifie : emprunt actif, propriétaire, limite de renouvellements, pas de réservation
-    /// en attente par un autre utilisateur sur le même livre.
-    /// </summary>
     [HttpPost("{loanId}/renew")]
     public async Task<ActionResult<ApiResponse<Loan>>> RenewLoan(int loanId, [FromQuery] int userId)
     {
@@ -137,7 +131,6 @@ public class LoansApiController : ControllerBase
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            // Récupérer l'emprunt
             var loan = await GetLoanAsync(connection, loanId);
 
             if (loan == null)
@@ -153,20 +146,18 @@ public class LoansApiController : ControllerBase
                 return BadRequest(ApiResponse<Loan>.Fail(
                     $"Limite de {_maxRenewals} renouvellement(s) atteinte pour cet emprunt"));
 
-            // Vérifier qu'aucun autre utilisateur n'attend ce livre en réservation
             var pendingReservations = await GetPendingReservationsCountAsync(connection, loan.BookId);
             if (pendingReservations > 0)
                 return BadRequest(ApiResponse<Loan>.Fail(
                     "Ce livre est réservé par d'autres membres. Le renouvellement n'est pas possible."));
 
-            // Appliquer le renouvellement
             using var transaction = connection.BeginTransaction();
             try
             {
                 var newDueDate = loan.DueDate.AddDays(_renewalExtensionDays);
 
                 var updateQuery = @"
-                    UPDATE Loan
+                    UPDATE Loans
                     SET DueDate = @NewDueDate,
                         RenewalCount = RenewalCount + 1
                     WHERE Id = @LoanId";
@@ -194,7 +185,7 @@ public class LoansApiController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<Loan>.Fail("Erreur lors du renouvellement"));
+            return StatusCode(500, ApiResponse<Loan>.Fail($"Erreur lors du renouvellement : {ex.Message}"));
         }
     }
 
@@ -211,7 +202,7 @@ public class LoansApiController : ControllerBase
             var query = $@"
                 SELECT Id, BookCopyId, BorrowerId, LoanDate, DueDate, ReturnDate,
                        Status, RenewalCount, BookId, BookTitleSnapshot
-                FROM Loan
+                FROM Loans
                 WHERE BorrowerId = @UserId {statusFilter}
                 ORDER BY LoanDate DESC";
 
@@ -241,7 +232,7 @@ public class LoansApiController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ApiResponse<List<Loan>>.Fail("Erreur lors de la récupération des emprunts"));
+            return StatusCode(500, ApiResponse<List<Loan>>.Fail($"Erreur lors de la récupération des emprunts : {ex.Message}"));
         }
     }
 
@@ -252,7 +243,7 @@ public class LoansApiController : ControllerBase
         var query = @"
             SELECT Id, BookCopyId, BorrowerId, LoanDate, DueDate, ReturnDate,
                    Status, RenewalCount, BookId, BookTitleSnapshot
-            FROM Loan WHERE Id = @LoanId";
+            FROM Loans WHERE Id = @LoanId";
 
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@LoanId", loanId);
@@ -280,7 +271,7 @@ public class LoansApiController : ControllerBase
 
     private async Task<int> GetPendingReservationsCountAsync(SqlConnection connection, int bookId)
     {
-        var query = "SELECT COUNT(*) FROM Reservation WHERE BookId = @BookId AND Status = 'PENDING'";
+        var query = "SELECT COUNT(*) FROM Reservations WHERE BookId = @BookId AND Status = 'PENDING'";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@BookId", bookId);
         return (int)(await command.ExecuteScalarAsync() ?? 0);
@@ -296,7 +287,7 @@ public class LoansApiController : ControllerBase
 
     private async Task<int> GetUserActiveLoansCountAsync(SqlConnection connection, int userId)
     {
-        var query = "SELECT COUNT(*) FROM Loan WHERE BorrowerId = @UserId AND Status = 'ONGOING'";
+        var query = "SELECT COUNT(*) FROM Loans WHERE BorrowerId = @UserId AND Status = 'ONGOING'";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
         return (int)(await command.ExecuteScalarAsync() ?? 0);
@@ -306,7 +297,7 @@ public class LoansApiController : ControllerBase
     {
         var query = @"
             SELECT TOP 1 Id, BookId, Barcode, ShelfLocation, Condition, Status
-            FROM BookCopy
+            FROM BookCopies
             WHERE BookId = @BookId AND Status = 'AVAILABLE' AND IsReferenceOnly = 0
             ORDER BY AcquisitionDate";
 
@@ -333,7 +324,7 @@ public class LoansApiController : ControllerBase
     private async Task<bool> HasActiveLoanForBookAsync(SqlConnection connection, int userId, int bookId)
     {
         var query = @"
-            SELECT COUNT(*) FROM Loan
+            SELECT COUNT(*) FROM Loans
             WHERE BorrowerId = @UserId AND BookId = @BookId AND Status = 'ONGOING'";
 
         using var command = new SqlCommand(query, connection);
@@ -344,7 +335,7 @@ public class LoansApiController : ControllerBase
 
     private async Task<Book?> GetBookInfoAsync(SqlConnection connection, int bookId)
     {
-        var query = "SELECT Id, Title FROM Book WHERE Id = @BookId";
+        var query = "SELECT Id, Title FROM Books WHERE Id = @BookId";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@BookId", bookId);
         using var reader = await command.ExecuteReaderAsync();
@@ -383,7 +374,7 @@ public class LoansApiController : ControllerBase
             BEGIN
                 UPDATE BookStatistics
                 SET TotalLoansCount = TotalLoansCount + 1,
-                    CurrentActiveLoansCount = (SELECT COUNT(*) FROM Loan WHERE BookId = @BookId AND Status = 'ONGOING'),
+                    CurrentActiveLoansCount = (SELECT COUNT(*) FROM Loans WHERE BookId = @BookId AND Status = 'ONGOING'),
                     LastLoanDate = GETDATE(),
                     UpdatedAt = GETDATE()
                 WHERE BookId = @BookId
