@@ -77,6 +77,55 @@ var dueSoonCount = Model.CurrentLoans.Count(l => !l.IsOverdue && l.DaysUntilDue 
     </div>
 </div>
 
+<!-- Emprunts en attente de validation -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background-color:#f59e0b;color:white">
+        <span><i class="fas fa-hourglass-half me-2"></i>Emprunts en attente de validation</span>
+        <span class="badge" style="background:rgba(255,255,255,.25);color:white">@Model.PendingLoans.Count</span>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.PendingLoans.Any())
+        {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>Livre</th>
+                    <th>Demandé le</th>
+                    <th>Date de retour prévue</th>
+                    <th>Statut</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var loan in Model.PendingLoans)
+                {
+                <tr>
+                    <td data-label="Livre">
+                        <a asp-controller="Catalog" asp-action="Details" asp-route-id="@loan.BookId"
+                           style="font-family:'Playfair Display',serif;font-weight:600;color:var(--bordeaux);font-size:1rem">
+                            @loan.BookTitleSnapshot
+                        </a>
+                    </td>
+                    <td data-label="Demandé le">@loan.LoanDate.ToString("dd/MM/yyyy")</td>
+                    <td data-label="Date de retour prévue">@loan.DueDate.ToString("dd/MM/yyyy")</td>
+                    <td data-label="Statut">
+                        <span class="badge" style="background-color:#f59e0b">En attente de validation</span>
+                    </td>
+                </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        }
+        else
+        {
+        <div class="text-center py-4 px-3">
+            <p class="mb-0" style="color:var(--ink-muted);font-style:italic">Aucun emprunt en attente de validation</p>
+        </div>
+        }
+    </div>
+</div>
+
 <!-- Emprunts en cours -->
 <div class="card mb-4">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">

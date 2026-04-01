@@ -49,6 +49,7 @@ public class UserDashboardController : Controller
         {
             User = user,
             CurrentLoans = await GetUserLoansAsync(connection, userId),
+            PendingLoans = await GetUserPendingLoansAsync(connection, userId),
             ActiveReservations = await GetUserReservationsAsync(connection, userId),
             MaxConcurrentLoans = _maxConcurrentLoans,
             MaxReservations = _maxReservations
@@ -94,8 +95,42 @@ public class UserDashboardController : Controller
             SELECT Id, BookCopyId, BorrowerId, LoanDate, DueDate, ReturnDate,
                    Status, RenewalCount, BookId, BookTitleSnapshot
             FROM Loans
-            WHERE BorrowerId = @UserId AND Status = 'OnLoan'
+            WHERE BorrowerId = @UserId AND Status = 'onLoan'
             ORDER BY DueDate";
+
+        using var command = new SqlCommand(query, connection);
+        command.Parameters.AddWithValue("@UserId", userId);
+        using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            loans.Add(new Loan
+            {
+                Id = reader.GetInt32(0),
+                BookCopyId = reader.GetInt32(1),
+                BorrowerId = reader.GetInt32(2),
+                LoanDate = reader.GetDateTime(3),
+                DueDate = reader.GetDateTime(4),
+                ReturnDate = reader.IsDBNull(5) ? null : reader.GetDateTime(5),
+                Status = reader.GetString(6),
+                RenewalCount = reader.GetInt32(7),
+                BookId = reader.GetInt32(8),
+                BookTitleSnapshot = reader.IsDBNull(9) ? null : reader.GetString(9)
+            });
+        }
+
+        return loans;
+    }
+
+    private async Task<List<Loan>> GetUserPendingLoansAsync(SqlConnection connection, int userId)
+    {
+        var loans = new List<Loan>();
+        var query = @"
+            SELECT Id, BookCopyId, BorrowerId, LoanDate, DueDate, ReturnDate,
+                   Status, RenewalCount, BookId, BookTitleSnapshot
+            FROM Loans
+            WHERE BorrowerId = @UserId AND Status = 'reserved'
+            ORDER BY LoanDate DESC";
 
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
