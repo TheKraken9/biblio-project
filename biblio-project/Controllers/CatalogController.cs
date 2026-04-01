@@ -92,7 +92,7 @@ public class CatalogController : Controller
     private async Task<List<Category>> GetCategoriesAsync(SqlConnection connection)
     {
         var categories = new List<Category>();
-        var query = "SELECT Id, Name, Slug, Description FROM Category ORDER BY Name";
+        var query = "SELECT Id, Name, Description FROM Category ORDER BY Name";
 
         using var command = new SqlCommand(query, connection);
         using var reader = await command.ExecuteReaderAsync();
@@ -103,8 +103,7 @@ public class CatalogController : Controller
             {
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
-                Slug = reader.GetString(2),
-                Description = reader.IsDBNull(3) ? null : reader.GetString(3)
+                Description = reader.IsDBNull(2) ? null : reader.GetString(2)
             });
         }
 
@@ -314,7 +313,7 @@ public class CatalogController : Controller
     {
         var categories = new List<Category>();
         var query = @"
-            SELECT c.Id, c.Name, c.Slug, c.Description
+            SELECT c.Id, c.Name, c.Description
             FROM Category c
             INNER JOIN BookCategory bc ON c.Id = bc.CategoryId
             WHERE bc.BookId = @BookId
@@ -330,8 +329,7 @@ public class CatalogController : Controller
             {
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
-                Slug = reader.GetString(2),
-                Description = reader.IsDBNull(3) ? null : reader.GetString(3)
+                Description = reader.IsDBNull(2) ? null : reader.GetString(2)
             });
         }
 

@@ -231,7 +231,6 @@ public class BooksApiController : ControllerBase
             {
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
-                Slug = reader.GetString(1).ToLower().Replace(" ", "-"), // Générer slug à partir du nom
                 Description = reader.IsDBNull(2) ? null : reader.GetString(2)
             });
         }
