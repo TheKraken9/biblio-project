@@ -81,7 +81,7 @@ public class LoansApiController : ControllerBase
                     loanId = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
                 }
 
-                var updateCopyQuery = "UPDATE BookCopies SET Status = 'ON_LOAN' WHERE Id = @CopyId";
+                var updateCopyQuery = "UPDATE BookCopies SET Status = 'Emprunté' WHERE Id = @CopyId";
                 using (var command = new SqlCommand(updateCopyQuery, connection, transaction))
                 {
                     command.Parameters.AddWithValue("@CopyId", availableCopy.Id);
@@ -296,9 +296,9 @@ public class LoansApiController : ControllerBase
     private async Task<BookCopy?> GetAvailableBookCopyAsync(SqlConnection connection, int bookId)
     {
         var query = @"
-            SELECT TOP 1 Id, BookId, Barcode, ShelfLocation, Condition, Status
+            SELECT TOP 1 Id, BookId, Barcode, ShelfLocation, Status
             FROM BookCopies
-            WHERE BookId = @BookId AND Status = 'AVAILABLE' AND IsReferenceOnly = 0
+            WHERE BookId = @BookId AND Status = 'Disponible'
             ORDER BY AcquisitionDate";
 
         using var command = new SqlCommand(query, connection);
@@ -313,8 +313,7 @@ public class LoansApiController : ControllerBase
                 BookId = reader.GetInt32(1),
                 Barcode = reader.GetString(2),
                 ShelfLocation = reader.GetString(3),
-                Condition = reader.GetString(4),
-                Status = reader.GetString(5)
+                Status = reader.GetString(4)
             };
         }
 
