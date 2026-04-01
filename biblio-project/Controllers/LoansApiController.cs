@@ -83,7 +83,7 @@ public class LoansApiController : ControllerBase
                     loanId = (int)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException());
                 }
 
-                var updateCopyQuery = "UPDATE BookCopies SET Status = 'Emprunté' WHERE Id = @CopyId";
+                var updateCopyQuery = "UPDATE BookCopies SET Status = 'reserved' WHERE Id = @CopyId";
                 using (var command = new SqlCommand(updateCopyQuery, connection, transaction))
                 {
                     command.Parameters.AddWithValue("@CopyId", availableCopy.Id);
