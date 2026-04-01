@@ -288,7 +288,7 @@ public class LoansApiController : ControllerBase
 
     private async Task<bool> UserExistsAsync(SqlConnection connection, int userId)
     {
-        var query = "SELECT COUNT(*) FROM LibraryUser WHERE Id = @UserId AND IsActive = 1";
+        var query = "SELECT COUNT(*) FROM library_user WHERE Id = @UserId AND IsActive = 1";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
         return (int)(await command.ExecuteScalarAsync() ?? 0) > 0;
@@ -357,7 +357,7 @@ public class LoansApiController : ControllerBase
 
     private async Task<LibraryUser?> GetUserInfoAsync(SqlConnection connection, int userId)
     {
-        var query = "SELECT Id, FirstName, LastName, Email FROM LibraryUser WHERE Id = @UserId";
+        var query = "SELECT Id, FirstName, LastName, Email FROM library_user WHERE Id = @UserId";
         using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@UserId", userId);
         using var reader = await command.ExecuteReaderAsync();
