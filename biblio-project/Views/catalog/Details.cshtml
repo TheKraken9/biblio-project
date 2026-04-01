@@ -147,6 +147,29 @@ var isAuthenticated = !string.IsNullOrEmpty(authenticatedUserId);
         </div>
 
 
+        <!-- Statistiques d'emprunt -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title" style="font-size:1rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-muted);margin-bottom:.75rem">
+                    <i class="fas fa-chart-bar me-2"></i>Statistiques d'emprunt
+                </h5>
+                <div class="row g-3 text-center">
+                    <div class="col-6">
+                        <div style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif">
+                            @Model.TotalLoansCount
+                        </div>
+                        <div style="font-size:.82rem;color:var(--ink-muted)">emprunt(s) au total</div>
+                    </div>
+                    <div class="col-6">
+                        <div style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif">
+                            @Model.CurrentActiveLoansCount
+                        </div>
+                        <div style="font-size:.82rem;color:var(--ink-muted)">emprunt(s) en cours</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Biographies auteurs -->
         @if (Model.Authors.Any(a => !string.IsNullOrEmpty(a.Bio)))
         {

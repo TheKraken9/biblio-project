@@ -12,6 +12,8 @@ public class BookDetail
     public int AvailableCopiesCount { get; set; }
     public int TotalCopiesCount { get; set; }
     public string? PublisherName { get; set; }
+    public int TotalLoansCount { get; set; }
+    public int CurrentActiveLoansCount { get; set; }
     public bool IsAvailable => AvailableCopiesCount > 0;
     public List<Author> Authors { get; set; } = new();
     public List<Category> Categories { get; set; } = new();

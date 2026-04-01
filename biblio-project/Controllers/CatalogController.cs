@@ -238,9 +238,12 @@ public class CatalogController : Controller
             SELECT b.Id, b.Title, b.Subtitle, b.PublicationYear,
                    b.CoverImageUrl, b.AuthorNamesText, b.CategoryNamesText,
                    b.AvailableCopiesCount, b.TotalCopiesCount,
-                   p.Name as PublisherName
+                   p.Name as PublisherName,
+                   ISNULL(bs.TotalLoansCount, 0) as TotalLoansCount,
+                   ISNULL(bs.CurrentActiveLoansCount, 0) as CurrentActiveLoansCount
             FROM Books b
             LEFT JOIN Publisher p ON b.PublisherId = p.Id
+            LEFT JOIN BookStatistics bs ON b.Id = bs.BookId
             WHERE b.Id = @BookId";
 
         using (var command = new SqlCommand(query, connection))
@@ -261,7 +264,9 @@ public class CatalogController : Controller
                     CategoryNamesText = reader.IsDBNull(6) ? null : reader.GetString(6),
                     AvailableCopiesCount = reader.GetInt32(7),
                     TotalCopiesCount = reader.GetInt32(8),
-                    PublisherName = reader.IsDBNull(9) ? null : reader.GetString(9)
+                    PublisherName = reader.IsDBNull(9) ? null : reader.GetString(9),
+                    TotalLoansCount = reader.GetInt32(10),
+                    CurrentActiveLoansCount = reader.GetInt32(11)
                 };
             }
         }
