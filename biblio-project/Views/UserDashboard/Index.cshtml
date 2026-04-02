@@ -188,7 +188,7 @@ var dueSoonCount = Model.CurrentLoans.Count(l => !l.IsOverdue && l.DaysUntilDue 
                         @if (loan.RenewalCount < 2 && !loan.IsOverdue)
                         {
                         <button class="btn btn-sm btn-outline-primary"
-                                onclick="renewLoan(@loan.Id)">
+                                onclick="renewLoan(@loan.Id, @loan.BookId)">
                             <i class="fas fa-redo me-1"></i>Renouveler
                         </button>
                         }
@@ -344,24 +344,53 @@ var dueSoonCount = Model.CurrentLoans.Count(l => !l.IsOverdue && l.DaysUntilDue 
     }
 
     // ── Renouvellement ──────────────────────────────────────────────────────
-    function renewLoan(loanId) {
-        showConfirm(
-            'Renouveler l\'emprunt',
-            'Voulez-vous renouveler cet emprunt de 7 jours supplémentaires ?',
-            () => {
-                fetch(`/api/loans/${loanId}/renew?userId=${userId}`, { method: 'POST' })
-                    .then(r => r.json())
-                    .then(data => {
-                        showMessage(
-                            data.success ? 'Renouvellement effectué' : 'Erreur',
-                            data.message,
-                            data.success ? 'success' : 'danger'
-                        );
-                        if (data.success) setTimeout(() => location.reload(), 1800);
-                    })
-                    .catch(() => showMessage('Erreur', 'Une erreur est survenue', 'danger'));
-            }
-        );
+    function renewLoan(loanId, bookId) {
+        fetch(`/api/loans/${loanId}/availability?userId=${userId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.canRenew) {
+                    showConfirm(
+                        'Renouveler l\'emprunt',
+                        'Voulez-vous renouveler cet emprunt de 7 jours supplémentaires ?',
+                        () => {
+                            fetch(`/api/loans/${loanId}/renew?userId=${userId}`, { method: 'POST' })
+                                .then(r => r.json())
+                                .then(result => {
+                                    showMessage(
+                                        result.success ? 'Renouvellement effectué' : 'Erreur',
+                                        result.message,
+                                        result.success ? 'success' : 'danger'
+                                    );
+                                    if (result.success) setTimeout(() => location.reload(), 1800);
+                                })
+                                .catch(() => showMessage('Erreur', 'Une erreur est survenue', 'danger'));
+                        }
+                    );
+                } else {
+                    showConfirm(
+                        'Livre non disponible',
+                        `Ce livre est actuellement demandé par ${data.pendingCount} membre(s). Le renouvellement n'est pas possible.\n\nSi vous souhaitez tout de même l'emprunter à nouveau, vous pouvez rejoindre la file d'attente à la position ${data.nextQueuePosition}. Voulez-vous vous inscrire ?`,
+                        () => {
+                            fetch('/api/reservations/reserve', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ bookId: bookId, userId: parseInt(userId) })
+                            })
+                                .then(r => r.json())
+                                .then(result => {
+                                    showMessage(
+                                        result.success ? 'Réservation créée' : 'Erreur',
+                                        result.message,
+                                        result.success ? 'success' : 'danger'
+                                    );
+                                    if (result.success) setTimeout(() => location.reload(), 1800);
+                                })
+                                .catch(() => showMessage('Erreur', 'Une erreur est survenue', 'danger'));
+                        }
+                    );
+                }
+            })
+            .catch(() => showMessage('Erreur', 'Impossible de vérifier la disponibilité', 'danger'));
     }
 
     // ── Annulation réservation ──────────────────────────────────────────────

@@ -191,6 +191,34 @@ public class LoansApiController : ControllerBase
         }
     }
 
+    // ── Vérifier disponibilité avant renouvellement ──────────────────────────
+    [HttpGet("{loanId}/availability")]
+    public async Task<ActionResult> CheckRenewAvailability(int loanId, [FromQuery] int userId)
+    {
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var loan = await GetLoanAsync(connection, loanId);
+            if (loan == null)
+                return NotFound(new { error = "Emprunt non trouvé" });
+
+            if (loan.BorrowerId != userId)
+                return Forbid();
+
+            var pendingCount = await GetPendingReservationsCountAsync(connection, loan.BookId);
+            var canRenew = pendingCount == 0;
+            var nextQueuePosition = pendingCount + 1;
+
+            return Ok(new { canRenew, pendingCount, nextQueuePosition });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
     // ── Emprunts d'un utilisateur ─────────────────────────────────────────────
     [HttpGet("user/{userId}")]
     public async Task<ActionResult<ApiResponse<List<Loan>>>> GetUserLoans(int userId, [FromQuery] bool activeOnly = true)
